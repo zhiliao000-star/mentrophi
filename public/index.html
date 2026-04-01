@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mentrophi</title>
+  <meta name="description" content="Mentrophi is an AI-powered search engine for deep, structured research." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg: #F5F0E8;
+      --surface: #EDEAE0;
+      --text: #1A1A1A;
+      --accent: #C84B31;
+      --blue: #2D5A8E;
+      --border: #D4CFC4;
+      --muted: #6B6560;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
+    body {
+      font-family: 'DM Mono', monospace;
+      animation: fadeIn 0.6s ease;
+    }
+
+    button, input { font: inherit; color: inherit; background: transparent; border-radius: 0; }
+    a { color: inherit; text-decoration: none; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .app {
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .view {
+      width: 100%;
+      min-height: 100vh;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .view.hidden {
+      opacity: 0;
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      transform: translateY(10px);
+    }
+
+    .home {
+      display: grid;
+      place-items: center;
+      padding: 32px;
+    }
+
+    .home-inner {
+      width: min(100%, 760px);
+      text-align: center;
+    }
+
+    .logo, .results-logo {
+      font-family: 'Playfair Display', serif;
+      letter-spacing: 0.18em;
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    .tagline {
+      margin: 18px 0 36px;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(32px, 6vw, 48px);
+      line-height: 1.1;
+      font-weight: 400;
+    }
+
+    .search-shell {
+      width: min(100%, 600px);
+      margin: 0 auto;
+    }
+
+    .underline-input {
+      width: 100%;
+      border: 0;
+      border-bottom: 2px solid var(--accent);
+      padding: 16px 0 12px;
+      font-size: 18px;
+      outline: none;
+    }
+
+    .underline-input::placeholder { color: var(--muted); }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .chip-row {
+      margin-top: 28px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      font-size: 13px;
+    }
+
+    .chip:hover,
+    .chip:focus-visible,
+    .source-card:hover,
+    .source-card:focus-visible {
+      background: var(--surface);
+      outline: none;
+    }
+
+    .results {
+      padding: 0 28px 28px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto minmax(0, 480px);
+      gap: 24px;
+      align-items: end;
+      padding: 24px 0 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .results-logo {
+      cursor: pointer;
+      align-self: center;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);
+      gap: 26px;
+      padding-top: 22px;
+      align-items: start;
+    }
+
+    .panel-label {
+      margin: 0 0 14px;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .answer-panel,
+    .sources-panel {
+      min-height: 120px;
+    }
+
+    .answer-body {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.22);
+      min-height: 420px;
+      padding: 22px;
+      line-height: 1.7;
+      font-size: 15px;
+      overflow-wrap: anywhere;
+    }
+
+    .answer-body h2,
+    .answer-body h3,
+    .answer-body h4 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 600;
+      margin: 1.4em 0 0.6em;
+      line-height: 1.2;
+    }
+
+    .answer-body p:first-child,
+    .answer-body h2:first-child { margin-top: 0; }
+    .answer-body ul, .answer-body ol { padding-left: 1.3rem; }
+    .answer-body code {
+      background: var(--surface);
+      padding: 1px 4px;
+      border: 1px solid var(--border);
+    }
+    .answer-body blockquote {
+      margin: 1rem 0;
+      padding-left: 1rem;
+      border-left: 2px solid var(--accent);
+      color: var(--muted);
+    }
+    .answer-body sup a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .answer-placeholder {
+      color: var(--muted);
+    }
+
+    .sources-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .source-card {
+      display: block;
+      border: 1px solid var(--border);
+      padding: 14px;
+      transition: background 0.2s ease;
+    }
+
+    .source-top {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .source-index {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .source-title {
+      font-weight: 700;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .source-domain {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .source-snippet {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .followup {
+      margin-top: 24px;
+      border-top: 1px solid var(--border);
+      padding-top: 18px;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .status-row button {
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .status-row button:hover { background: var(--surface); }
+
+    @media (max-width: 768px) {
+      .results { padding: 0 18px 20px; }
+      .topbar { grid-template-columns: 1fr; gap: 14px; }
+      .layout { grid-template-columns: 1fr; }
+      .sources-panel { order: -1; }
+      .answer-body { min-height: 280px; }
+      .chip-row { justify-content: flex-start; }
+      .home-inner { text-align: left; }
+      .search-shell { margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section id="homeView" class="view home">
+      <div class="home-inner">
+        <div class="logo">MENTROPHI</div>
+        <div class="tagline">Search anything deeply</div>
+        <div class="search-shell">
+          <input id="homeInput" class="underline-input" type="text" placeholder="Ask anything..." autocomplete="off" />
+          <div class="hint">Press Enter to research</div>
+        </div>
+        <div class="chip-row">
+          <button class="chip" data-query="Climate tipping points">Climate tipping points</button>
+          <button class="chip" data-query="How LLMs work">How LLMs work</button>
+          <button class="chip" data-query="Stoicism today">Stoicism today</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultsView" class="view results hidden">
+      <div class="topbar">
+        <div id="backHome" class="results-logo">MENTROPHI</div>
+        <input id="topSearchInput" class="underline-input" type="text" placeholder="Ask anything..." autocomplete="off" />
+      </div>
+
+      <div class="layout">
+        <div>
+          <div class="panel-label">Answer</div>
+          <div id="answerBody" class="answer-body">
+            <div class="answer-placeholder">Ask a question to begin your research.</div>
+          </div>
+        </div>
+
+        <aside class="sources-panel">
+          <div class="panel-label">Sources</div>
+          <div id="sourcesList" class="sources-list"></div>
+        </aside>
+      </div>
+
+      <div class="followup">
+        <div class="status-row">
+          <span id="statusText">Idle</span>
+          <button id="clearThread" type="button">New Thread</button>
+        </div>
+        <input id="followupInput" class="underline-input" type="text" placeholder="Ask a follow-up..." autocomplete="off" />
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      history: [],
+      currentAnswer: '',
+      abortController: null,
+    };
+
+    const homeView = document.getElementById('homeView');
+    const resultsView = document.getElementById('resultsView');
+    const homeInput = document.getElementById('homeInput');
+    const topSearchInput = document.getElementById('topSearchInput');
+    const followupInput = document.getElementById('followupInput');
+    const answerBody = document.getElementById('answerBody');
+    const sourcesList = document.getElementById('sourcesList');
+    const statusText = document.getElementById('statusText');
+    const backHome = document.getElementById('backHome');
+    const clearThread = document.getElementById('clearThread');
+
+    marked.setOptions({ breaks: true, gfm: true });
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function showResults(query) {
+      resultsView.classList.remove('hidden');
+      homeView.classList.add('hidden');
+      topSearchInput.value = query;
+      followupInput.value = '';
+      setTimeout(() => followupInput.focus(), 80);
+    }
+
+    function showHome() {
+      if (state.abortController) {
+        state.abortController.abort();
+        state.abortController = null;
+      }
+      state.history = [];
+      state.currentAnswer = '';
+      homeView.classList.remove('hidden');
+      resultsView.classList.add('hidden');
+      answerBody.innerHTML = '<div class="answer-placeholder">Ask a question to begin your research.</div>';
+      sourcesList.innerHTML = '';
+      statusText.textContent = 'Idle';
+      homeInput.value = topSearchInput.value || '';
+      setTimeout(() => homeInput.focus(), 80);
+    }
+
+    function renderAnswer(markdown) {
+      if (!markdown.trim()) {
+        answerBody.innerHTML = '<div class="answer-placeholder">Mentrophi is thinking…</div>';
+        return;
+      }
+
+      let html = marked.parse(markdown);
+      html = html.replace(/\[(\d+)\]/g, '<sup><a href="#source-$1">[$1]</a></sup>');
+      answerBody.innerHTML = html;
+    }
+
+    function renderSources(sources) {
+      sourcesList.innerHTML = sources.map((source, index) => {
+        let hostname = source.displayUrl || source.url;
+        try { hostname = new URL(source.url).hostname.replace(/^www\./, ''); } catch (_) {}
+        return `
+          <a id="source-${index + 1}" class="source-card" href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">
+            <div class="source-top">
+              <span class="source-index">[${index + 1}]</span>
+              <span class="source-title">${escapeHtml(source.title || 'Untitled source')}</span>
+            </div>
+            <div class="source-domain">${escapeHtml(hostname)}</div>
+            <div class="source-snippet">${escapeHtml(source.snippet || 'No preview available.')}</div>
+          </a>
+        `;
+      }).join('');
+    }
+
+    function setStatus(text) {
+      statusText.textContent = text;
+    }
+
+    async function streamResearch(query) {
+      if (!query.trim()) return;
+
+      showResults(query);
+
+      if (state.abortController) {
+        state.abortController.abort();
+      }
+
+      state.abortController = new AbortController();
+      const userMessage = { role: 'user', content: query.trim() };
+      state.history.push(userMessage);
+      state.currentAnswer = '';
+      sourcesList.innerHTML = '';
+      renderAnswer('');
+      setStatus('Researching');
+
+      try {
+        const response = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query.trim(), history: state.history }),
+          signal: state.abortController.signal,
+        });
+
+        if (!response.ok || !response.body) {
+          let message = 'Request failed.';
+          try {
+            const error = await response.json();
+            message = error.error || message;
+          } catch (_) {}
+          throw new Error(message);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let activeEvent = 'message';
+        let finished = false;
+
+        while (!finished) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split('\n\n');
+          buffer = events.pop() || '';
+
+          for (const rawEvent of events) {
+            const lines = rawEvent.split('\n').filter(Boolean);
+            let eventName = activeEvent;
+            let dataLine = '';
+
+            for (const line of lines) {
+              if (line.startsWith('event:')) eventName = line.slice(6).trim();
+              if (line.startsWith('data:')) dataLine += line.slice(5).trim();
+            }
+
+            if (!dataLine) continue;
+            const payload = JSON.parse(dataLine);
+
+            if (eventName === 'sources') {
+              renderSources(payload.sources || []);
+            }
+            if (eventName === 'chunk') {
+              state.currentAnswer += payload.content || '';
+              renderAnswer(state.currentAnswer);
+              setStatus('Streaming');
+            }
+            if (eventName === 'error') {
+              throw new Error(payload.error || 'Streaming error.');
+            }
+            if (eventName === 'done') {
+              finished = true;
+              break;
+            }
+          }
+        }
+
+        state.history.push({ role: 'assistant', content: state.currentAnswer.trim() });
+        setStatus('Complete');
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          setStatus('Canceled');
+          return;
+        }
+        answerBody.innerHTML = `<div class="answer-placeholder">${escapeHtml(error.message || 'Something went wrong.')}</div>`;
+        setStatus('Error');
+      } finally {
+        state.abortController = null;
+      }
+    }
+
+    function submitFromInput(input) {
+      const value = input.value.trim();
+      if (!value) return;
+      input.value = '';
+      streamResearch(value);
+    }
+
+    [homeInput, topSearchInput, followupInput].forEach((input) => {
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          submitFromInput(input);
+        }
+      });
+    });
+
+    document.querySelectorAll('.chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const query = chip.dataset.query || '';
+        homeInput.value = query;
+        submitFromInput(homeInput);
+      });
+    });
+
+    backHome.addEventListener('click', showHome);
+    clearThread.addEventListener('click', () => {
+      state.history = [];
+      state.currentAnswer = '';
+      answerBody.innerHTML = '<div class="answer-placeholder">Thread cleared. Ask a fresh question.</div>';
+      sourcesList.innerHTML = '';
+      setStatus('Idle');
+      topSearchInput.value = '';
+      followupInput.value = '';
+      followupInput.focus();
+    });
+
+    homeInput.focus();
+  </script>
+</body>
+</html>
