@@ -7,8 +7,8 @@ const CORS_HEADERS = {
 const DEFAULT_SYSTEM_PROMPT = `You are Mentrophi. Synthesize information from ALL provided sources. Present multiple viewpoints and international perspectives. Use ## headings. Cite every claim as [1][2]. Explain the why, tradeoffs, history, and nuance. Respond in the user's language.`;
 const CODE_SYSTEM_PROMPT = `You are Mentrophi in Code Mode. You have just researched this technology. Write production-quality code that avoids the common pitfalls you found. Every non-obvious decision must have a comment. Never use deprecated APIs. Always use the latest stable patterns.`;
 
-const NVIDIA_CHAT_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
-const DEFAULT_AI_MODEL = 'z-ai/glm5';
+const DEFAULT_AI_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_AI_MODEL = 'openai/gpt-4.1-mini';
 const USER_AGENT = 'Mozilla/5.0';
 const MAX_RESULTS_PER_SEARCH = 3;
 const MAX_SOURCE_CHARS = 800;
@@ -159,6 +159,30 @@ async function collectSources(query) {
   }));
 }
 
+function getAiConfig(env) {
+  return {
+    apiKey: env.AI_API_KEY || env.OPENROUTER_API_KEY || env.NVIDIA_API_KEY || '',
+    baseUrl: env.AI_BASE_URL || DEFAULT_AI_BASE_URL,
+    model: env.AI_MODEL || DEFAULT_AI_MODEL,
+    siteUrl: env.AI_SITE_URL || env.CF_PAGES_URL || '',
+    siteName: env.AI_SITE_NAME || 'Mentrophi',
+  };
+}
+
+function buildHeaders(aiConfig) {
+  const headers = {
+    Authorization: `Bearer ${aiConfig.apiKey}`,
+    'Content-Type': 'application/json',
+  };
+
+  if (/openrouter\.ai/i.test(aiConfig.baseUrl)) {
+    if (aiConfig.siteUrl) headers['HTTP-Referer'] = aiConfig.siteUrl;
+    if (aiConfig.siteName) headers['X-Title'] = aiConfig.siteName;
+  }
+
+  return headers;
+}
+
 function formatHistory(history, query, sources, codeMode) {
   const safeHistory = Array.isArray(history) ? history : [];
   const systemPrompt = codeMode ? CODE_SYSTEM_PROMPT : DEFAULT_SYSTEM_PROMPT;
@@ -213,8 +237,9 @@ export async function onRequest(context) {
       });
     }
 
-    if (!env.NVIDIA_API_KEY) {
-      return new Response(JSON.stringify({ error: 'Missing NVIDIA_API_KEY' }), {
+    const aiConfig = getAiConfig(env);
+    if (!aiConfig.apiKey) {
+      return new Response(JSON.stringify({ error: 'Missing AI_API_KEY (or OPENROUTER_API_KEY / NVIDIA_API_KEY)' }), {
         status: 500,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
@@ -223,14 +248,11 @@ export async function onRequest(context) {
     const codeMode = isCodeQuery(query);
     const sources = await collectSources(query);
 
-    const aiResponse = await fetch(NVIDIA_CHAT_URL, {
+    const aiResponse = await fetch(aiConfig.baseUrl, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.NVIDIA_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(aiConfig),
       body: JSON.stringify({
-        model: env.AI_MODEL || DEFAULT_AI_MODEL,
+        model: aiConfig.model,
         stream: true,
         temperature: codeMode ? 0.2 : 0.35,
         messages: formatHistory(history, query, sources, codeMode),
@@ -239,7 +261,7 @@ export async function onRequest(context) {
 
     if (!aiResponse.ok || !aiResponse.body) {
       const errorText = await aiResponse.text();
-      throw new Error(`NVIDIA NIM failed (${env.AI_MODEL || DEFAULT_AI_MODEL}): ${aiResponse.status} ${errorText}`);
+      throw new Error(`AI provider failed (${aiConfig.model}): ${aiResponse.status} ${errorText}`);
     }
 
     const encoder = new TextEncoder();
@@ -247,7 +269,7 @@ export async function onRequest(context) {
 
     const stream = new ReadableStream({
       async start(controller) {
-        controller.enqueue(encoder.encode(sseData('meta', { codeMode })));
+        controller.enqueue(encoder.encode(sseData('meta', { codeMode, model: aiConfig.model, provider: aiConfig.baseUrl })));
         controller.enqueue(encoder.encode(sseData('sources', { sources })));
         const reader = aiResponse.body.getReader();
         let buffer = '';
