@@ -4,7 +4,8 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const DEFAULT_SYSTEM_PROMPT = `You are Mentrophi. Synthesize information from ALL provided sources. Present multiple viewpoints and international perspectives. Use ## headings. Cite every claim as [1][2]. Explain the why, tradeoffs, history, and nuance. Respond in the user's language.`;
+const DEFAULT_SYSTEM_PROMPT = `You are Mentrophi, a premium conversational AI assistant. Default to natural chat, not article mode. Use a warm, direct assistant tone unless the user asks for a formal structure. Only behave like a research assistant when the query genuinely needs current, factual, or external information. If the user is just greeting you, chatting casually, or asking for opinion/help that does not require fresh facts, answer naturally without pretending to research. Respond in the user's language.`;
+const RESEARCH_SYSTEM_PROMPT = `You are Mentrophi. You have researched multiple external sources for this question. Synthesize information from ALL provided sources. Present multiple viewpoints and international perspectives when relevant. Use ## headings when structure helps. Cite factual claims as [1][2]. Explain the why, tradeoffs, history, and nuance. Respond in the user's language.`;
 const CODE_SYSTEM_PROMPT = `You are Mentrophi in Code Mode. You have just researched this technology. Write production-quality code that avoids the common pitfalls you found. Every non-obvious decision must have a comment. Never use deprecated APIs. Always use the latest stable patterns.`;
 
 const DEFAULT_AI_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -50,8 +51,30 @@ function looksLikeCurrentQuery(query = '') {
   return /(today|news|latest|current|breaking|election|stock|score|war|conflict|president|minister|earthquake|hurricane|update|202\d|20\d\d)/i.test(query);
 }
 
+function isGreetingQuery(query = '') {
+  return /^(hi|hello|hey|yo|sup|what'?s up|good morning|good afternoon|good evening|how are you|hiya|hola|你好|嗨|哈喽)\b[!.? ]*$/i.test(query.trim());
+}
+
 function isCodeQuery(query = '') {
   return /(write|build|create|code|function|script|implement|program|debug|refactor|api|component|app|endpoint|algorithm|sql|javascript|typescript|python|react|node|express|next\.js|html|css)/i.test(query);
+}
+
+function needsResearch(query = '') {
+  const trimmed = query.trim();
+  if (!trimmed) return false;
+  if (isGreetingQuery(trimmed)) return false;
+  if (
+    trimmed.split(/\s+/).length <= 4
+    && !looksLikeCurrentQuery(trimmed)
+    && !/[?？]$/.test(trimmed)
+    && !/\b(explain|what is|who is|why|how|when|where|compare|research|latest|news|current)\b/i.test(trimmed)
+  ) {
+    return false;
+  }
+  return isCodeQuery(trimmed)
+    || looksLikeCurrentQuery(trimmed)
+    || /\b(latest|news|current|today|research|sources|according to|compare|price|release date|version|documented|statistics|trend|update|fact check|recent)\b/i.test(trimmed)
+    || /[?？]$/.test(trimmed);
 }
 
 function extractTechnology(query = '') {
@@ -168,26 +191,9 @@ function firstNonEmpty(...values) {
 
 function getAiConfig(env) {
   return {
-    apiKey: firstNonEmpty(
-      env.AI_API_KEY,
-      env.API_KEY,
-      env.OPENROUTER_API_KEY,
-      env.OPENROUTER_KEY,
-      env.NVIDIA_API_KEY,
-    ),
-    baseUrl: firstNonEmpty(
-      env.AI_BASE_URL,
-      env.API_BASE_URL,
-      env.OPENROUTER_BASE_URL,
-      env.OPENROUTER_API_BASE,
-      DEFAULT_AI_BASE_URL,
-    ),
-    model: firstNonEmpty(
-      env.AI_MODEL,
-      env.MODEL_ID,
-      env.OPENROUTER_MODEL,
-      DEFAULT_AI_MODEL,
-    ),
+    apiKey: firstNonEmpty(env.AI_API_KEY, env.API_KEY, env.OPENROUTER_API_KEY, env.OPENROUTER_KEY, env.NVIDIA_API_KEY),
+    baseUrl: firstNonEmpty(env.AI_BASE_URL, env.API_BASE_URL, env.OPENROUTER_BASE_URL, env.OPENROUTER_API_BASE, DEFAULT_AI_BASE_URL),
+    model: firstNonEmpty(env.AI_MODEL, env.MODEL_ID, env.OPENROUTER_MODEL, DEFAULT_AI_MODEL),
     siteUrl: firstNonEmpty(env.AI_SITE_URL, env.CF_PAGES_URL),
     siteName: firstNonEmpty(env.AI_SITE_NAME, 'Mentrophi'),
   };
@@ -207,15 +213,24 @@ function buildHeaders(aiConfig) {
   return headers;
 }
 
-function formatHistory(history, query, sources, codeMode) {
+function formatHistory(history, query, sources, codeMode, researchMode) {
   const safeHistory = Array.isArray(history) ? history : [];
-  const systemPrompt = codeMode ? CODE_SYSTEM_PROMPT : DEFAULT_SYSTEM_PROMPT;
+  const systemPrompt = codeMode
+    ? CODE_SYSTEM_PROMPT
+    : researchMode
+      ? RESEARCH_SYSTEM_PROMPT
+      : DEFAULT_SYSTEM_PROMPT;
   const messages = [{ role: 'system', content: systemPrompt }];
 
   for (const item of safeHistory) {
     if (!item || typeof item.role !== 'string' || typeof item.content !== 'string') continue;
     if (!['user', 'assistant', 'system'].includes(item.role)) continue;
     messages.push({ role: item.role, content: item.content });
+  }
+
+  if (!researchMode && !codeMode) {
+    messages.push({ role: 'user', content: query });
+    return messages;
   }
 
   const researchSummary = codeMode
@@ -263,16 +278,15 @@ export async function onRequest(context) {
 
     const aiConfig = getAiConfig(env);
     if (!aiConfig.apiKey) {
-      return new Response(JSON.stringify({
-        error: 'Missing API key. Set AI_API_KEY, API_KEY, OPENROUTER_API_KEY, or NVIDIA_API_KEY.',
-      }), {
+      return new Response(JSON.stringify({ error: 'Missing API key. Set AI_API_KEY, API_KEY, OPENROUTER_API_KEY, or NVIDIA_API_KEY.' }), {
         status: 500,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
     }
 
     const codeMode = isCodeQuery(query);
-    const sources = await collectSources(query);
+    const researchMode = needsResearch(query);
+    const sources = researchMode || codeMode ? await collectSources(query) : [];
 
     const aiResponse = await fetch(aiConfig.baseUrl, {
       method: 'POST',
@@ -281,7 +295,7 @@ export async function onRequest(context) {
         model: aiConfig.model,
         stream: true,
         temperature: codeMode ? 0.2 : 0.35,
-        messages: formatHistory(history, query, sources, codeMode),
+        messages: formatHistory(history, query, sources, codeMode, researchMode),
       }),
     });
 
@@ -295,8 +309,10 @@ export async function onRequest(context) {
 
     const stream = new ReadableStream({
       async start(controller) {
-        controller.enqueue(encoder.encode(sseData('meta', { codeMode, model: aiConfig.model, provider: aiConfig.baseUrl })));
-        controller.enqueue(encoder.encode(sseData('sources', { sources })));
+        controller.enqueue(encoder.encode(sseData('meta', { codeMode, researchMode, model: aiConfig.model, provider: aiConfig.baseUrl })));
+        if (researchMode || codeMode) {
+          controller.enqueue(encoder.encode(sseData('sources', { sources })));
+        }
         const reader = aiResponse.body.getReader();
         let buffer = '';
 
