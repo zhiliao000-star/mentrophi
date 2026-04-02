@@ -104,8 +104,20 @@ Presentation rules:
 const DEFAULT_AI_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_AI_MODEL = 'openai/gpt-4.1-mini';
 const USER_AGENT = 'Mozilla/5.0';
-const MAX_RESULTS_PER_SEARCH = 4;
+const MAX_RESULTS_PER_SEARCH = 5;
 const MAX_SOURCE_CHARS = 800;
+
+const FINANCIAL_CONTEXT_RE = /\b(stock|share price|shares|fund|trust|etf|dividend|yield|ticker|nav|market cap|earnings|revenue estimate|price target)\b/i;
+
+function getCurrentDateContext() {
+  const now = new Date();
+  const iso = now.toISOString();
+  const ymd = iso.slice(0, 10);
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth() + 1;
+  const day = now.getUTCDate();
+  return { now, iso, ymd, year, month, day };
+}
 
 function decodeHtml(value = '') {
   return value
@@ -206,30 +218,34 @@ function extractTechnology(query = '') {
 }
 
 function buildSearchQueries(query) {
+  const { year, month, day, ymd } = getCurrentDateContext();
   if (isCodeQuery(query)) {
     const tech = extractTechnology(query);
     return [
-      `${tech} latest version ${new Date().getFullYear()}`,
-      `${tech} official docs current version`,
+      `${tech} latest version ${year}`,
+      `${tech} official docs current version ${ymd}`,
+      `${tech} release notes ${year}`,
       `${tech} common mistakes pitfalls`,
       `${tech} best practices`,
     ];
   }
 
-  const year = new Date().getFullYear();
   const normalized = normalizeEntityQuery(query);
   const queries = [];
 
   if (looksLikeCurrentEntityQuery(query)) {
-    queries.push(`${normalized} latest ${year}`);
-    queries.push(`${normalized} news ${year}`);
-    queries.push(`${normalized} this week`);
-    queries.push(`${normalized} recent developments`);
+    queries.push(`${normalized} latest ${ymd}`);
+    queries.push(`${normalized} news ${ymd}`);
+    queries.push(`${normalized} this week ${year}`);
+    queries.push(`${normalized} recent developments ${month}/${day}/${year}`);
+    if (/xai/i.test(query) && !FINANCIAL_CONTEXT_RE.test(query)) {
+      queries.push(`xAI company Elon Musk artificial intelligence latest ${ymd}`);
+    }
   } else {
     queries.push(normalized);
-    queries.push(`${normalized} news`);
+    queries.push(`${normalized} news ${ymd}`);
     queries.push(`${normalized} analysis`);
-    if (looksLikeCurrentQuery(query)) queries.push(`${normalized} ${year}`);
+    if (looksLikeCurrentQuery(query)) queries.push(`${normalized} ${ymd}`);
   }
 
   return [...new Set(queries)];
@@ -288,8 +304,23 @@ async function fetchSourceContent(source) {
 }
 
 async function collectSources(query) {
-  const searchQueries = buildSearchQueries(query);
-  const searchResults = await Promise.all(searchQueries.map((q) => runDuckDuckGoSearch(q)));
+  const { year } = getCurrentDateContext();
+  let searchQueries = buildSearchQueries(query);
+  let searchResults = await Promise.all(searchQueries.map((q) => runDuckDuckGoSearch(q)));
+
+  const allInitial = searchResults.flat();
+  const needsXaiRetry = /xai/i.test(query) && !FINANCIAL_CONTEXT_RE.test(query) && !allInitial.some((r) => /xai|elon musk|artificial intelligence/i.test(`${r.title} ${r.snippet}`));
+  if (needsXaiRetry) {
+    const retryQueries = [
+      `xAI company Elon Musk artificial intelligence latest ${year}`,
+      `xAI company news this week ${year}`,
+      `xAI artificial intelligence company recent developments`,
+    ];
+    const retryResults = await Promise.all(retryQueries.map((q) => runDuckDuckGoSearch(q)));
+    searchQueries = [...searchQueries, ...retryQueries];
+    searchResults = [...searchResults, ...retryResults];
+  }
+
   const merged = [];
   const seen = new Set();
 
@@ -304,14 +335,19 @@ async function collectSources(query) {
   const freshnessPriority = (source) => {
     const haystack = `${source.title || ''} ${source.snippet || ''}`.toLowerCase();
     let score = 0;
-    if (/minutes? ago|hours? ago|just now|today|this week/.test(haystack)) score += 5;
+    if (/minutes? ago|hours? ago|just now|today|this week/.test(haystack)) score += 7;
     if (/latest|new|current|update|updated|recent|announces|launches|releases/.test(haystack)) score += 2;
+    if (/2023|2024/.test(haystack) && !/2026|this week|today|hours? ago|minutes? ago/.test(haystack)) score -= 4;
     if (/analysis|background|explained/.test(haystack)) score -= 1;
+    if (/xai|elon musk|artificial intelligence/.test(haystack) && /xai/i.test(query) && !FINANCIAL_CONTEXT_RE.test(query)) score += 4;
+    if (/fund|trust|etf|dividend|yield|ticker/.test(haystack) && /xai/i.test(query) && !FINANCIAL_CONTEXT_RE.test(query)) score -= 6;
     return score;
   };
 
   const enriched = await Promise.all(merged.map(fetchSourceContent));
-  const prioritized = enriched.sort((a, b) => freshnessPriority(b) - freshnessPriority(a));
+  const prioritized = enriched
+    .filter((source) => freshnessPriority(source) > -3)
+    .sort((a, b) => freshnessPriority(b) - freshnessPriority(a));
   return prioritized.map((source, index) => ({
     ...source,
     index: index + 1,
@@ -371,9 +407,10 @@ function formatHistory(history, query, sources, codeMode, researchMode) {
     return messages;
   }
 
+  const { iso, ymd } = getCurrentDateContext();
   const researchSummary = codeMode
-    ? `Research checklist completed: latest stable version guidance, common pitfalls, and best practices for ${extractTechnology(query)}.`
-    : 'Use the external sources below to silently improve your answer, but keep the final response conversational.';
+    ? `Research checklist completed at ${iso}: latest stable version guidance, common pitfalls, and best practices for ${extractTechnology(query)}.`
+    : `Use the external sources below to silently improve your answer. Current date is ${ymd}, so prioritize the freshest correct entity and discard stale or mismatched results.`;
 
   messages.push({
     role: 'user',
