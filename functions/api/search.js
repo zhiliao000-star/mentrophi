@@ -30,8 +30,10 @@ Message mimicry requirements:
 - when transitioning, prefer subtle transitions instead of loud markers
 
 Behavior:
-- for greetings, small talk, and simple conversation, reply naturally and briefly
-- for factual, analytical, writing, and code requests, silently do the research you need first, then answer as if you simply know the answer
+- for greetings, small talk, simple conversation, and very short messages, reply naturally and briefly
+- default to chat mode for normal conversation, writing help, brainstorming, explanation, summarization, rewriting, and translation
+- only trigger external research when the query clearly needs current information, live facts, recent events, or outside verification
+- when external research is not clearly needed, stay in normal chat mode
 - even when research happened, the answer must still feel like one smooth assistant reply
 - do not sound like Perplexity, a report generator, or an academic explainer unless the user explicitly asks for that style
 - default to a composed, understated tone
@@ -139,12 +141,20 @@ function isCodeQuery(query = '') {
   return /(write|build|create|code|function|script|implement|program|debug|refactor|api|component|app|endpoint|algorithm|sql|javascript|typescript|python|react|node|express|next\.js|html|css)/i.test(query);
 }
 
-function shouldResearchByDefault(query = '') {
+function isShortChatQuery(query = '') {
+  return /^(thanks|thank you|ok|okay|cool|nice|got it|sounds good|help me write this|write this for me|rewrite this|translate this|summarize this|行|好|好的)\b[!.? ]*$/i.test(query.trim());
+}
+
+function clearlyNeedsResearch(query = '') {
   const trimmed = query.trim();
   if (!trimmed) return false;
-  if (isGreetingQuery(trimmed)) return false;
-  if (/^(thanks|thank you|ok|okay|cool|nice|got it|sounds good|行|好|好的)\b[!.? ]*$/i.test(trimmed)) return false;
-  return true;
+  if (isGreetingQuery(trimmed) || isShortChatQuery(trimmed)) return false;
+
+  const currentInfo = /(today|news|latest|current|currently|right now|breaking|update|updated|as of|this week|this month|2026|2027|live|score|odds|weather|forecast|stock|price|market|election|president|prime minister|ceo|court ruled|announced|released)/i.test(trimmed);
+  const externalLookup = /(look up|search|web|online|find sources|source this|what happened|is it true|did .* happen|who won|who is .* now|what's new|recent)/i.test(trimmed);
+  const explicitFreshness = /(newest|recent|recently|up to date|up-to-date)/i.test(trimmed);
+
+  return currentInfo || externalLookup || explicitFreshness;
 }
 
 function extractTechnology(query = '') {
@@ -356,7 +366,7 @@ export async function onRequest(context) {
     }
 
     const codeMode = isCodeQuery(query);
-    const researchMode = shouldResearchByDefault(query);
+    const researchMode = clearlyNeedsResearch(query) && !codeMode;
     const sources = researchMode || codeMode ? await collectSources(query) : [];
 
     const aiResponse = await fetch(aiConfig.baseUrl, {
