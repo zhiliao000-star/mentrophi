@@ -55,12 +55,18 @@ You already researched this question using external sources. Now answer in a way
 
 Rules:
 - write in natural prose first
-- keep structure light unless it truly improves clarity
-- avoid making the answer feel like a report, article, search result page, or encyclopedia entry unless the user explicitly asks for that
+- start with 1 short natural sentence that directly answers the question
+- then give only the 2-4 most relevant developments or takeaways
+- prefer short paragraphs over bullet lists by default
+- avoid making the answer feel like a report, article, search result page, recap page, or encyclopedia entry unless the user explicitly asks for that
 - synthesize clearly, calmly, and usefully
+- do not pack too many disconnected points into one answer
+- prioritize what mattered most, why it mattered, and what it likely means
 - mention nuance, uncertainty, and disagreement when relevant
-- cite factual claims inline as [1], [2] only when useful
+- cite factual claims inline as [1], [2] only when truly useful
 - never let citations dominate the tone or rhythm of the answer
+- if sources are helpful, keep references light and low-emphasis near the bottom
+- for 'what happened this week' or similar queries, answer like a smart assistant catching the user up, not like a news aggregation app
 - do not mention that you researched unless the user asks
 - never begin with a greeting or a meta opener
 - prefer a direct first sentence that sounds like Claude's normal chat voice
@@ -329,6 +335,7 @@ function formatHistory(history, query, sources, codeMode, researchMode) {
       '',
       researchSummary,
       'Important: use the sources to improve factual accuracy and recency, but keep the final answer stylistically natural and low-key.',
+      "If the user asks a 'what happened this week / lately / recently' style question, do not produce a news digest. Give a short conversational catch-up focused on what mattered most.",
       ...sources.map((source) => `${source.ref} ${source.title}\nDomain: ${source.domain}\nURL: ${source.url}\nSnippet: ${source.snippet || 'N/A'}\nContent: ${source.content || 'N/A'}`),
       ...(codeMode ? ['', 'If you write code, start with a short comment header in the code: `// Researched: ...` when appropriate.'] : []),
     ].join('\n\n'),
