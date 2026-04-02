@@ -11,7 +11,7 @@ Cite sources inline as [1], [2]. Always respond in the same
 language as the user query. Go deeper than surface-level --
 explain the why, the tradeoffs, the context, the nuance.`;
 
-const DEFAULT_AI_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const NVIDIA_CHAT_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const DEFAULT_AI_MODEL = 'z-ai/glm5';
 
 function decodeHtml(value = '') {
@@ -35,6 +35,14 @@ function normalizeUrl(rawUrl = '') {
   if (/^https?:\/\//i.test(decoded)) return decoded;
   if (decoded.startsWith('//')) return `https:${decoded}`;
   return `https://${decoded.replace(/^\/+/, '')}`;
+}
+
+function safeHostname(url, fallback = '') {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return fallback;
+  }
 }
 
 function extractSearchResults(html) {
@@ -62,7 +70,7 @@ function extractSearchResults(html) {
       title,
       snippet,
       url,
-      displayUrl: visibleUrl || new URL(url).hostname,
+      displayUrl: visibleUrl || safeHostname(url, url),
     });
 
     if (results.length === 8) break;
@@ -71,7 +79,7 @@ function extractSearchResults(html) {
   return results;
 }
 
-function formatHistory(history, sources) {
+function formatHistory(history, query, sources) {
   const safeHistory = Array.isArray(history) ? history : [];
   const messages = [{ role: 'system', content: SYSTEM_PROMPT }];
 
@@ -84,7 +92,7 @@ function formatHistory(history, sources) {
   messages.push({
     role: 'user',
     content: [
-      `User query: ${safeHistory.at(-1)?.role === 'user' ? safeHistory.at(-1).content : ''}`,
+      `User query: ${query}`,
       '',
       'Search results:',
       ...sources.map((source, index) => `${index + 1}. ${source.title}\nURL: ${source.url}\nSnippet: ${source.snippet}`),
@@ -96,16 +104,6 @@ function formatHistory(history, sources) {
 
 function sseData(event, data) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-}
-
-function getAiConfig(env) {
-  return {
-    apiKey: env.AI_API_KEY || env.OPENROUTER_API_KEY || env.NVIDIA_API_KEY || '',
-    baseUrl: env.AI_BASE_URL || DEFAULT_AI_BASE_URL,
-    model: env.AI_MODEL || DEFAULT_AI_MODEL,
-    siteUrl: env.AI_SITE_URL || env.CF_PAGES_URL || '',
-    siteName: env.AI_SITE_NAME || 'Mentrophi',
-  };
 }
 
 export async function onRequest(context) {
@@ -132,10 +130,8 @@ export async function onRequest(context) {
       });
     }
 
-    const aiConfig = getAiConfig(env);
-
-    if (!aiConfig.apiKey) {
-      return new Response(JSON.stringify({ error: 'Missing AI_API_KEY (or OPENROUTER_API_KEY)' }), {
+    if (!env.NVIDIA_API_KEY) {
+      return new Response(JSON.stringify({ error: 'Missing NVIDIA_API_KEY' }), {
         status: 500,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
@@ -152,25 +148,23 @@ export async function onRequest(context) {
     const searchHtml = await searchResponse.text();
     const sources = extractSearchResults(searchHtml);
 
-    const aiResponse = await fetch(aiConfig.baseUrl, {
+    const aiResponse = await fetch(NVIDIA_CHAT_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${aiConfig.apiKey}`,
+        Authorization: `Bearer ${env.NVIDIA_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': aiConfig.siteUrl,
-        'X-Title': aiConfig.siteName,
       },
       body: JSON.stringify({
-        model: aiConfig.model,
+        model: env.AI_MODEL || DEFAULT_AI_MODEL,
         stream: true,
         temperature: 0.4,
-        messages: formatHistory(Array.isArray(history) ? history : [{ role: 'user', content: query }], sources),
+        messages: formatHistory(history, query, sources),
       }),
     });
 
     if (!aiResponse.ok || !aiResponse.body) {
       const errorText = await aiResponse.text();
-      throw new Error(`AI provider failed (${aiConfig.model}): ${aiResponse.status} ${errorText}`);
+      throw new Error(`NVIDIA NIM failed (${env.AI_MODEL || DEFAULT_AI_MODEL}): ${aiResponse.status} ${errorText}`);
     }
 
     const encoder = new TextEncoder();
@@ -209,7 +203,7 @@ export async function onRequest(context) {
                 if (delta) {
                   controller.enqueue(encoder.encode(sseData('chunk', { content: delta })));
                 }
-              } catch (error) {
+              } catch {
                 controller.enqueue(encoder.encode(sseData('error', { error: 'Failed to parse AI stream chunk.' })));
               }
             }
