@@ -104,7 +104,7 @@ Presentation rules:
 const DEFAULT_AI_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_AI_MODEL = 'openai/gpt-4.1-mini';
 const USER_AGENT = 'Mozilla/5.0';
-const MAX_RESULTS_PER_SEARCH = 3;
+const MAX_RESULTS_PER_SEARCH = 4;
 const MAX_SOURCE_CHARS = 800;
 
 function decodeHtml(value = '') {
@@ -168,6 +168,29 @@ function clearlyNeedsResearch(query = '') {
   return currentInfo || externalLookup || explicitFreshness;
 }
 
+
+function normalizeEntityQuery(query = '') {
+  let normalized = query.trim();
+  if (!normalized) return normalized;
+
+  const replacements = [
+    { pattern: /xai/gi, value: 'xAI company' },
+    { pattern: /openai/gi, value: 'OpenAI company' },
+    { pattern: /anthropic/gi, value: 'Anthropic company' },
+    { pattern: /meta/gi, value: 'Meta company' },
+  ];
+
+  for (const { pattern, value } of replacements) {
+    normalized = normalized.replace(pattern, value);
+  }
+
+  return normalized;
+}
+
+function looksLikeCurrentEntityQuery(query = '') {
+  return /(what happened to|latest on|what's new with|what happened with|latest from|recent on|recent with|news on|news about)/i.test(query.trim());
+}
+
 function extractTechnology(query = '') {
   const patterns = [
     /\b(?:in|using|with|for)\s+([a-z0-9.+#\-\/ ]{2,40})/i,
@@ -186,15 +209,29 @@ function buildSearchQueries(query) {
   if (isCodeQuery(query)) {
     const tech = extractTechnology(query);
     return [
-      `${tech} latest version 2025`,
+      `${tech} latest version ${new Date().getFullYear()}`,
+      `${tech} official docs current version`,
       `${tech} common mistakes pitfalls`,
       `${tech} best practices`,
     ];
   }
 
   const year = new Date().getFullYear();
-  const queries = [query, `${query} news`, `${query} analysis`];
-  if (looksLikeCurrentQuery(query)) queries.push(`${query} ${year}`);
+  const normalized = normalizeEntityQuery(query);
+  const queries = [];
+
+  if (looksLikeCurrentEntityQuery(query)) {
+    queries.push(`${normalized} latest ${year}`);
+    queries.push(`${normalized} news ${year}`);
+    queries.push(`${normalized} this week`);
+    queries.push(`${normalized} recent developments`);
+  } else {
+    queries.push(normalized);
+    queries.push(`${normalized} news`);
+    queries.push(`${normalized} analysis`);
+    if (looksLikeCurrentQuery(query)) queries.push(`${normalized} ${year}`);
+  }
+
   return [...new Set(queries)];
 }
 
@@ -264,8 +301,18 @@ async function collectSources(query) {
     }
   }
 
+  const freshnessPriority = (source) => {
+    const haystack = `${source.title || ''} ${source.snippet || ''}`.toLowerCase();
+    let score = 0;
+    if (/minutes? ago|hours? ago|just now|today|this week/.test(haystack)) score += 5;
+    if (/latest|new|current|update|updated|recent|announces|launches|releases/.test(haystack)) score += 2;
+    if (/analysis|background|explained/.test(haystack)) score -= 1;
+    return score;
+  };
+
   const enriched = await Promise.all(merged.map(fetchSourceContent));
-  return enriched.map((source, index) => ({
+  const prioritized = enriched.sort((a, b) => freshnessPriority(b) - freshnessPriority(a));
+  return prioritized.map((source, index) => ({
     ...source,
     index: index + 1,
     ref: `[${index + 1}]`,
