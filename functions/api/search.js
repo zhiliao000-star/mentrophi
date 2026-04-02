@@ -159,13 +159,37 @@ async function collectSources(query) {
   }));
 }
 
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
 function getAiConfig(env) {
   return {
-    apiKey: env.AI_API_KEY || env.OPENROUTER_API_KEY || env.NVIDIA_API_KEY || '',
-    baseUrl: env.AI_BASE_URL || DEFAULT_AI_BASE_URL,
-    model: env.AI_MODEL || DEFAULT_AI_MODEL,
-    siteUrl: env.AI_SITE_URL || env.CF_PAGES_URL || '',
-    siteName: env.AI_SITE_NAME || 'Mentrophi',
+    apiKey: firstNonEmpty(
+      env.AI_API_KEY,
+      env.API_KEY,
+      env.OPENROUTER_API_KEY,
+      env.OPENROUTER_KEY,
+      env.NVIDIA_API_KEY,
+    ),
+    baseUrl: firstNonEmpty(
+      env.AI_BASE_URL,
+      env.API_BASE_URL,
+      env.OPENROUTER_BASE_URL,
+      env.OPENROUTER_API_BASE,
+      DEFAULT_AI_BASE_URL,
+    ),
+    model: firstNonEmpty(
+      env.AI_MODEL,
+      env.MODEL_ID,
+      env.OPENROUTER_MODEL,
+      DEFAULT_AI_MODEL,
+    ),
+    siteUrl: firstNonEmpty(env.AI_SITE_URL, env.CF_PAGES_URL),
+    siteName: firstNonEmpty(env.AI_SITE_NAME, 'Mentrophi'),
   };
 }
 
@@ -239,7 +263,9 @@ export async function onRequest(context) {
 
     const aiConfig = getAiConfig(env);
     if (!aiConfig.apiKey) {
-      return new Response(JSON.stringify({ error: 'Missing AI_API_KEY (or OPENROUTER_API_KEY / NVIDIA_API_KEY)' }), {
+      return new Response(JSON.stringify({
+        error: 'Missing API key. Set AI_API_KEY, API_KEY, OPENROUTER_API_KEY, or NVIDIA_API_KEY.',
+      }), {
         status: 500,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
@@ -261,7 +287,7 @@ export async function onRequest(context) {
 
     if (!aiResponse.ok || !aiResponse.body) {
       const errorText = await aiResponse.text();
-      throw new Error(`AI provider failed (${aiConfig.model}): ${aiResponse.status} ${errorText}`);
+      throw new Error(`AI provider failed (${aiConfig.model} @ ${aiConfig.baseUrl}): ${aiResponse.status} ${errorText}`);
     }
 
     const encoder = new TextEncoder();
