@@ -4,18 +4,18 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const SYSTEM_PROMPT = `You are Mentrophi, a deep research AI. Given search results
-and a user query, write a thorough, structured, insightful
-answer. Use markdown with ## headings and bullet points.
-Cite sources inline as [1], [2]. Always respond in the same
-language as the user query. Go deeper than surface-level --
-explain the why, the tradeoffs, the context, the nuance.`;
+const SYSTEM_PROMPT = `You are Mentrophi. Synthesize information from ALL provided sources. Present multiple viewpoints and international perspectives. Use ## headings. Cite every claim as [1][2]. Explain the why, tradeoffs, history, and nuance. Respond in the user's language.`;
 
 const NVIDIA_CHAT_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const DEFAULT_AI_MODEL = 'z-ai/glm5';
+const USER_AGENT = 'Mozilla/5.0';
+const MAX_RESULTS_PER_SEARCH = 3;
+const MAX_SOURCE_CHARS = 600;
 
 function decodeHtml(value = '') {
   return value
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<[^>]*>/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
@@ -39,10 +39,21 @@ function normalizeUrl(rawUrl = '') {
 
 function safeHostname(url, fallback = '') {
   try {
-    return new URL(url).hostname;
+    return new URL(url).hostname.replace(/^www\./, '');
   } catch {
     return fallback;
   }
+}
+
+function looksLikeCurrentQuery(query = '') {
+  return /(today|news|latest|current|breaking|election|stock|score|war|conflict|president|minister|earthquake|hurricane|update|202\d|20\d\d)/i.test(query);
+}
+
+function buildSearchQueries(query) {
+  const year = new Date().getFullYear();
+  const queries = [query, `${query} news`, `${query} analysis`];
+  if (looksLikeCurrentQuery(query)) queries.push(`${query} ${year}`);
+  return [...new Set(queries)];
 }
 
 function extractSearchResults(html) {
@@ -54,7 +65,6 @@ function extractSearchResults(html) {
     const titleMatch = block.match(/result__title[\s\S]*?<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
     const snippetMatch = block.match(/<a[^>]*class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>|<div[^>]*class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
     const urlMatch = block.match(/<a[^>]*class="[^"]*result__url[^"]*"[^>]*>([\s\S]*?)<\/a>/i);
-
     if (!titleMatch) continue;
 
     const title = decodeHtml(titleMatch[2]);
@@ -65,18 +75,60 @@ function extractSearchResults(html) {
       : normalizeUrl(titleMatch[1]);
 
     if (!title || !url) continue;
-
-    results.push({
-      title,
-      snippet,
-      url,
-      displayUrl: visibleUrl || safeHostname(url, url),
-    });
-
-    if (results.length === 8) break;
+    results.push({ title, snippet, url, displayUrl: visibleUrl || safeHostname(url, url) });
+    if (results.length === MAX_RESULTS_PER_SEARCH) break;
   }
 
   return results;
+}
+
+async function runDuckDuckGoSearch(query) {
+  const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}&kl=us-en`, {
+    headers: { 'User-Agent': USER_AGENT },
+  });
+  if (!response.ok) throw new Error(`DuckDuckGo search failed with status ${response.status}`);
+  return extractSearchResults(await response.text());
+}
+
+function extractPageText(html) {
+  const mainMatch = html.match(/<main[\s\S]*?<\/main>/i) || html.match(/<article[\s\S]*?<\/article>/i);
+  const candidate = mainMatch ? mainMatch[0] : html;
+  return decodeHtml(candidate).slice(0, MAX_SOURCE_CHARS);
+}
+
+async function fetchSourceContent(source) {
+  try {
+    const response = await fetch(source.url, { headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,application/xhtml+xml' } });
+    if (!response.ok) return { ...source, content: source.snippet || '' };
+    const html = await response.text();
+    const content = extractPageText(html) || source.snippet || '';
+    return { ...source, content };
+  } catch {
+    return { ...source, content: source.snippet || '' };
+  }
+}
+
+async function collectSources(query) {
+  const searchQueries = buildSearchQueries(query);
+  const searchResults = await Promise.all(searchQueries.map((q) => runDuckDuckGoSearch(q)));
+  const merged = [];
+  const seen = new Set();
+
+  for (const resultSet of searchResults) {
+    for (const result of resultSet) {
+      if (seen.has(result.url)) continue;
+      seen.add(result.url);
+      merged.push(result);
+    }
+  }
+
+  const enriched = await Promise.all(merged.map(fetchSourceContent));
+  return enriched.map((source, index) => ({
+    ...source,
+    index: index + 1,
+    ref: `[${index + 1}]`,
+    domain: safeHostname(source.url, source.displayUrl || source.url),
+  }));
 }
 
 function formatHistory(history, query, sources) {
@@ -94,9 +146,9 @@ function formatHistory(history, query, sources) {
     content: [
       `User query: ${query}`,
       '',
-      'Search results:',
-      ...sources.map((source, index) => `${index + 1}. ${source.title}\nURL: ${source.url}\nSnippet: ${source.snippet}`),
-    ].join('\n'),
+      'Use all of the following source material in your synthesis:',
+      ...sources.map((source) => `${source.ref} ${source.title}\nDomain: ${source.domain}\nURL: ${source.url}\nSnippet: ${source.snippet || 'N/A'}\nContent: ${source.content || 'N/A'}`),
+    ].join('\n\n'),
   });
 
   return messages;
@@ -109,9 +161,7 @@ function sseData(event, data) {
 export async function onRequest(context) {
   const { request, env } = context;
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: CORS_HEADERS });
-  }
+  if (request.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
 
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -122,7 +172,6 @@ export async function onRequest(context) {
 
   try {
     const { query, history } = await request.json();
-
     if (!query || typeof query !== 'string') {
       return new Response(JSON.stringify({ error: 'Query is required' }), {
         status: 400,
@@ -137,16 +186,7 @@ export async function onRequest(context) {
       });
     }
 
-    const searchResponse = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}&kl=us-en`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-
-    if (!searchResponse.ok) {
-      throw new Error(`DuckDuckGo search failed with status ${searchResponse.status}`);
-    }
-
-    const searchHtml = await searchResponse.text();
-    const sources = extractSearchResults(searchHtml);
+    const sources = await collectSources(query);
 
     const aiResponse = await fetch(NVIDIA_CHAT_URL, {
       method: 'POST',
@@ -157,7 +197,7 @@ export async function onRequest(context) {
       body: JSON.stringify({
         model: env.AI_MODEL || DEFAULT_AI_MODEL,
         stream: true,
-        temperature: 0.4,
+        temperature: 0.35,
         messages: formatHistory(history, query, sources),
       }),
     });
@@ -173,7 +213,6 @@ export async function onRequest(context) {
     const stream = new ReadableStream({
       async start(controller) {
         controller.enqueue(encoder.encode(sseData('sources', { sources })));
-
         const reader = aiResponse.body.getReader();
         let buffer = '';
 
@@ -181,7 +220,6 @@ export async function onRequest(context) {
           while (true) {
             const { value, done } = await reader.read();
             if (done) break;
-
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
             buffer = lines.pop() || '';
@@ -189,8 +227,8 @@ export async function onRequest(context) {
             for (const rawLine of lines) {
               const line = rawLine.trim();
               if (!line.startsWith('data:')) continue;
-
               const payload = line.slice(5).trim();
+
               if (payload === '[DONE]') {
                 controller.enqueue(encoder.encode(sseData('done', { done: true })));
                 controller.close();
@@ -200,9 +238,7 @@ export async function onRequest(context) {
               try {
                 const parsed = JSON.parse(payload);
                 const delta = parsed.choices?.[0]?.delta?.content;
-                if (delta) {
-                  controller.enqueue(encoder.encode(sseData('chunk', { content: delta })));
-                }
+                if (delta) controller.enqueue(encoder.encode(sseData('chunk', { content: delta })));
               } catch {
                 controller.enqueue(encoder.encode(sseData('error', { error: 'Failed to parse AI stream chunk.' })));
               }

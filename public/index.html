@@ -12,354 +12,181 @@
   <style>
     :root {
       --bg: #F5F0E8;
+      --sidebar: #EDEAE0;
       --surface: #EDEAE0;
       --text: #1A1A1A;
       --accent: #C84B31;
-      --blue: #2D5A8E;
       --border: #D4CFC4;
       --muted: #6B6560;
     }
-
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
-    body {
-      font-family: 'DM Mono', monospace;
-      animation: fadeIn 0.6s ease;
-    }
-
-    button, input { font: inherit; color: inherit; background: transparent; border-radius: 0; }
+    body { font-family: 'DM Mono', monospace; }
+    button, input, textarea { font: inherit; color: inherit; }
+    button { background: transparent; border: 0; padding: 0; cursor: pointer; }
     a { color: inherit; text-decoration: none; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    .app {
-      min-height: 100vh;
-      position: relative;
-    }
-
-    .view {
-      width: 100%;
-      min-height: 100vh;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
-
-    .view.hidden {
-      opacity: 0;
-      pointer-events: none;
-      position: absolute;
-      inset: 0;
-      transform: translateY(10px);
-    }
-
-    .home {
-      display: grid;
-      place-items: center;
-      padding: 32px;
-    }
-
-    .home-inner {
-      width: min(100%, 760px);
-      text-align: center;
-    }
-
-    .logo, .results-logo {
-      font-family: 'Playfair Display', serif;
-      letter-spacing: 0.18em;
-      color: var(--accent);
-      font-size: 18px;
-    }
-
-    .tagline {
-      margin: 18px 0 36px;
-      font-family: 'Playfair Display', serif;
-      font-style: italic;
-      font-size: clamp(32px, 6vw, 48px);
-      line-height: 1.1;
-      font-weight: 400;
-    }
-
-    .search-shell {
-      width: min(100%, 600px);
-      margin: 0 auto;
-    }
-
-    .underline-input {
-      width: 100%;
-      border: 0;
-      border-bottom: 2px solid var(--accent);
-      padding: 16px 0 12px;
-      font-size: 18px;
-      outline: none;
-    }
-
-    .underline-input::placeholder { color: var(--muted); }
-
-    .hint {
-      margin-top: 10px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .chip-row {
-      margin-top: 28px;
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .chip {
-      border: 1px solid var(--border);
-      padding: 6px 14px;
-      cursor: pointer;
-      transition: background 0.2s ease;
-      font-size: 13px;
-    }
-
-    .chip:hover,
-    .chip:focus-visible,
-    .source-card:hover,
-    .source-card:focus-visible {
-      background: var(--surface);
-      outline: none;
-    }
-
-    .results {
-      padding: 0 28px 28px;
-    }
-
-    .topbar {
-      display: grid;
-      grid-template-columns: auto minmax(0, 480px);
-      gap: 24px;
-      align-items: end;
-      padding: 24px 0 18px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .results-logo {
-      cursor: pointer;
-      align-self: center;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);
-      gap: 26px;
-      padding-top: 22px;
-      align-items: start;
-    }
-
-    .panel-label {
-      margin: 0 0 14px;
-      font-size: 12px;
-      letter-spacing: 0.12em;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
-
-    .answer-panel,
-    .sources-panel {
-      min-height: 120px;
-    }
-
-    .answer-body {
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.22);
-      min-height: 420px;
-      padding: 22px;
-      line-height: 1.7;
-      font-size: 15px;
-      overflow-wrap: anywhere;
-    }
-
-    .answer-body h2,
-    .answer-body h3,
-    .answer-body h4 {
-      font-family: 'Playfair Display', serif;
-      font-weight: 600;
-      margin: 1.4em 0 0.6em;
-      line-height: 1.2;
-    }
-
-    .answer-body p:first-child,
-    .answer-body h2:first-child { margin-top: 0; }
-    .answer-body ul, .answer-body ol { padding-left: 1.3rem; }
-    .answer-body code {
-      background: var(--surface);
-      padding: 1px 4px;
-      border: 1px solid var(--border);
-    }
-    .answer-body blockquote {
-      margin: 1rem 0;
-      padding-left: 1rem;
-      border-left: 2px solid var(--accent);
-      color: var(--muted);
-    }
-    .answer-body sup a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .answer-placeholder {
-      color: var(--muted);
-    }
-
-    .sources-list {
-      display: grid;
-      gap: 12px;
-    }
-
-    .source-card {
-      display: block;
-      border: 1px solid var(--border);
-      padding: 14px;
-      transition: background 0.2s ease;
-    }
-
-    .source-top {
-      display: flex;
-      gap: 10px;
-      align-items: baseline;
-      margin-bottom: 8px;
-    }
-
-    .source-index {
-      color: var(--accent);
-      font-weight: 700;
-    }
-
-    .source-title {
-      font-weight: 700;
-      font-size: 14px;
-      line-height: 1.45;
-    }
-
-    .source-domain {
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 6px;
-    }
-
-    .source-snippet {
-      color: var(--muted);
-      font-size: 12px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .followup {
-      margin-top: 24px;
-      border-top: 1px solid var(--border);
-      padding-top: 18px;
-    }
-
-    .status-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 8px;
-      color: var(--muted);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-
-    .status-row button {
-      border: 1px solid var(--border);
-      padding: 6px 10px;
-      cursor: pointer;
-    }
-
-    .status-row button:hover { background: var(--surface); }
-
-    @media (max-width: 768px) {
-      .results { padding: 0 18px 20px; }
-      .topbar { grid-template-columns: 1fr; gap: 14px; }
-      .layout { grid-template-columns: 1fr; }
-      .sources-panel { order: -1; }
-      .answer-body { min-height: 280px; }
-      .chip-row { justify-content: flex-start; }
-      .home-inner { text-align: left; }
-      .search-shell { margin: 0; }
+    .app { display: grid; grid-template-columns: 240px minmax(0, 1fr) 280px; min-height: 100vh; }
+    .sidebar { background: var(--sidebar); border-right: 1px solid var(--border); padding: 18px 14px; display: flex; flex-direction: column; gap: 18px; }
+    .brand { color: var(--accent); letter-spacing: 0.12em; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+    .new-chat { border: 1px solid var(--accent); color: var(--accent); padding: 10px 12px; border-radius: 0; text-align: left; }
+    .history-title { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; padding-top: 4px; border-top: 1px solid var(--border); }
+    .history-list { display: grid; gap: 6px; }
+    .history-item { padding: 10px 8px; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .history-item.active, .history-item:hover { background: rgba(200,75,49,0.08); color: var(--text); }
+    .main { display: flex; flex-direction: column; min-width: 0; }
+    .topbar { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+    .menu-btn { display: none; font-size: 20px; color: var(--accent); }
+    .top-query { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rule { height: 1px; background: var(--border); margin: 0 24px; }
+    .content-wrap { flex: 1; overflow: auto; padding: 28px 24px 124px; }
+    .article-shell { max-width: 680px; margin: 0 auto; width: 100%; }
+    .home-state { min-height: calc(100vh - 188px); display: grid; place-items: center; text-align: center; }
+    .home-inner { width: min(100%, 760px); }
+    .hero-mark { color: var(--accent); font-size: 46px; margin-bottom: 12px; }
+    .hero-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: clamp(32px, 5vw, 40px); font-weight: 400; margin: 0 0 26px; }
+    .composer { position: relative; width: 100%; }
+    .composer-input { width: 100%; background: rgba(255,255,255,0.45); border: 1px solid var(--border); border-radius: 12px; padding: 18px 56px 18px 18px; outline: none; box-shadow: 0 10px 30px rgba(26,26,26,0.06); }
+    .composer-input::placeholder { color: var(--muted); }
+    .send-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 999px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 16px; }
+    .chips { margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .chip { border: 1px solid var(--border); padding: 8px 12px; background: transparent; }
+    .article { display: none; }
+    .article.active { display: block; }
+    .article-body { font-size: 15px; line-height: 1.8; overflow-wrap: anywhere; }
+    .article-body h1, .article-body h2, .article-body h3, .article-body h4 { font-family: 'Playfair Display', serif; line-height: 1.2; font-weight: 600; margin: 1.5em 0 0.6em; }
+    .article-body h1:first-child, .article-body h2:first-child, .article-body p:first-child { margin-top: 0; }
+    .article-body p, .article-body li { font-family: 'DM Mono', monospace; }
+    .article-body sup a { color: var(--accent); text-decoration: none; font-size: 0.8em; }
+    .article-body blockquote { border-left: 1px solid var(--accent); margin: 1rem 0; padding-left: 1rem; color: var(--muted); }
+    .placeholder { color: var(--muted); }
+    .bottom-composer { position: fixed; left: 240px; right: 280px; bottom: 0; background: linear-gradient(to top, var(--bg) 70%, rgba(245,240,232,0)); padding: 16px 24px 20px; }
+    .bottom-composer .composer { max-width: 680px; margin: 0 auto; }
+    .bottom-composer .composer-input { border-radius: 0; background: var(--surface); box-shadow: none; padding: 16px 52px 16px 16px; }
+    .bottom-composer .send-btn { width: 28px; height: 28px; font-size: 14px; }
+    .sources-panel { border-left: 1px solid var(--border); padding: 24px 18px; background: rgba(237,234,224,0.35); overflow: auto; }
+    .sources-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .sources-title { font-size: 12px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+    .sources-toggle { display: none; border: 1px solid var(--border); padding: 6px 10px; }
+    .sources-list { display: grid; gap: 12px; }
+    .source-item { padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .source-ref { color: var(--text); font-size: 12px; margin-bottom: 4px; }
+    .source-link { display: block; font-size: 12px; line-height: 1.55; }
+    .source-domain { color: var(--accent); font-size: 11px; margin-top: 4px; }
+    .source-snippet { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .status { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; }
+    .mobile-only { display: none; }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: fixed; inset: 0 auto 0 0; width: 240px; transform: translateX(-100%); transition: transform 0.25s ease; z-index: 20; box-shadow: 12px 0 30px rgba(0,0,0,0.08); }
+      .sidebar.open { transform: translateX(0); }
+      .menu-btn { display: block; }
+      .sources-panel { display: none; }
+      .topbar { padding: 0 16px; }
+      .rule { margin: 0 16px; }
+      .content-wrap { padding: 22px 16px 120px; }
+      .chips { justify-content: flex-start; }
+      .home-state { text-align: left; }
+      .hero-title { font-size: 32px; }
+      .bottom-composer { left: 0; right: 0; padding: 12px 16px 16px; }
+      .mobile-only { display: inline-flex; }
+      .mobile-sources { display: none; margin-bottom: 18px; }
+      .mobile-sources.open { display: block; }
+      .source-item { border-bottom: 0; padding-bottom: 10px; }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <section id="homeView" class="view home">
-      <div class="home-inner">
-        <div class="logo">MENTROPHI</div>
-        <div class="tagline">Search anything deeply</div>
-        <div class="search-shell">
-          <input id="homeInput" class="underline-input" type="text" placeholder="Ask anything..." autocomplete="off" />
-          <div class="hint">Press Enter to research</div>
-        </div>
-        <div class="chip-row">
-          <button class="chip" data-query="Climate tipping points">Climate tipping points</button>
-          <button class="chip" data-query="How LLMs work">How LLMs work</button>
-          <button class="chip" data-query="Stoicism today">Stoicism today</button>
-        </div>
-      </div>
-    </section>
+    <aside id="sidebar" class="sidebar">
+      <div class="brand"><span>◆</span><span>MENTROPHI</span></div>
+      <button id="newChatBtn" class="new-chat">+ New Search</button>
+      <div class="history-title">History</div>
+      <div id="historyList" class="history-list"></div>
+    </aside>
 
-    <section id="resultsView" class="view results hidden">
+    <main class="main">
       <div class="topbar">
-        <div id="backHome" class="results-logo">MENTROPHI</div>
-        <input id="topSearchInput" class="underline-input" type="text" placeholder="Ask anything..." autocomplete="off" />
+        <button id="menuBtn" class="menu-btn">☰</button>
+        <div id="topQuery" class="top-query">New research</div>
+        <div id="statusText" class="status">Idle</div>
       </div>
+      <div class="rule"></div>
+      <div class="content-wrap">
+        <div class="article-shell">
+          <section id="homeState" class="home-state">
+            <div class="home-inner">
+              <div class="hero-mark">◆</div>
+              <h1 class="hero-title">What do you want to know?</h1>
+              <div class="composer">
+                <input id="homeInput" class="composer-input" type="text" placeholder="Ask anything..." autocomplete="off" />
+                <button id="homeSend" class="send-btn" aria-label="Send">↑</button>
+              </div>
+              <div class="chips">
+                <button class="chip" data-query="Climate tipping points">Climate tipping points</button>
+                <button class="chip" data-query="How LLMs work">How LLMs work</button>
+                <button class="chip" data-query="Stoicism today">Stoicism today</button>
+              </div>
+            </div>
+          </section>
 
-      <div class="layout">
-        <div>
-          <div class="panel-label">Answer</div>
-          <div id="answerBody" class="answer-body">
-            <div class="answer-placeholder">Ask a question to begin your research.</div>
-          </div>
+          <section id="articleView" class="article">
+            <button id="mobileSourcesToggle" class="sources-toggle mobile-only">Sources (0)</button>
+            <div id="mobileSources" class="mobile-sources"></div>
+            <div id="answerBody" class="article-body">
+              <div class="placeholder">Ask a question to begin your research.</div>
+            </div>
+          </section>
         </div>
-
-        <aside class="sources-panel">
-          <div class="panel-label">Sources</div>
-          <div id="sourcesList" class="sources-list"></div>
-        </aside>
       </div>
 
-      <div class="followup">
-        <div class="status-row">
-          <span id="statusText">Idle</span>
-          <button id="clearThread" type="button">New Thread</button>
+      <div class="bottom-composer">
+        <div class="composer">
+          <input id="followupInput" class="composer-input" type="text" placeholder="Go deeper..." autocomplete="off" />
+          <button id="followupSend" class="send-btn" aria-label="Send">↑</button>
         </div>
-        <input id="followupInput" class="underline-input" type="text" placeholder="Ask a follow-up..." autocomplete="off" />
       </div>
-    </section>
+    </main>
+
+    <aside class="sources-panel">
+      <div class="sources-header">
+        <div class="sources-title">Sources</div>
+        <button id="clearThreadBtn" class="status">New</button>
+      </div>
+      <div id="sourcesList" class="sources-list"></div>
+    </aside>
   </div>
 
   <script>
+    const STORAGE_KEY = 'mentrophi-history-v1';
     const state = {
-      history: [],
+      sessions: [],
+      activeSessionId: null,
       currentAnswer: '',
+      currentSources: [],
       abortController: null,
     };
 
-    const homeView = document.getElementById('homeView');
-    const resultsView = document.getElementById('resultsView');
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.getElementById('menuBtn');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const clearThreadBtn = document.getElementById('clearThreadBtn');
+    const historyList = document.getElementById('historyList');
+    const homeState = document.getElementById('homeState');
+    const articleView = document.getElementById('articleView');
     const homeInput = document.getElementById('homeInput');
-    const topSearchInput = document.getElementById('topSearchInput');
+    const homeSend = document.getElementById('homeSend');
     const followupInput = document.getElementById('followupInput');
+    const followupSend = document.getElementById('followupSend');
     const answerBody = document.getElementById('answerBody');
     const sourcesList = document.getElementById('sourcesList');
+    const mobileSources = document.getElementById('mobileSources');
+    const mobileSourcesToggle = document.getElementById('mobileSourcesToggle');
     const statusText = document.getElementById('statusText');
-    const backHome = document.getElementById('backHome');
-    const clearThread = document.getElementById('clearThread');
+    const topQuery = document.getElementById('topQuery');
 
     marked.setOptions({ breaks: true, gfm: true });
 
-    function escapeHtml(text) {
+    function escapeHtml(text = '') {
       return text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -368,84 +195,130 @@
         .replace(/'/g, '&#39;');
     }
 
-    function showResults(query) {
-      resultsView.classList.remove('hidden');
-      homeView.classList.add('hidden');
-      topSearchInput.value = query;
-      followupInput.value = '';
-      setTimeout(() => followupInput.focus(), 80);
+    function saveSessions() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.sessions));
     }
 
-    function showHome() {
-      if (state.abortController) {
-        state.abortController.abort();
-        state.abortController = null;
+    function loadSessions() {
+      try {
+        state.sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch {
+        state.sessions = [];
       }
-      state.history = [];
-      state.currentAnswer = '';
-      homeView.classList.remove('hidden');
-      resultsView.classList.add('hidden');
-      answerBody.innerHTML = '<div class="answer-placeholder">Ask a question to begin your research.</div>';
-      sourcesList.innerHTML = '';
-      statusText.textContent = 'Idle';
-      homeInput.value = topSearchInput.value || '';
-      setTimeout(() => homeInput.focus(), 80);
+    }
+
+    function createSession(query = '') {
+      const id = crypto.randomUUID();
+      const title = query ? query.slice(0, 42) : 'New research';
+      const session = { id, title, query, history: [], answer: '', sources: [] };
+      state.sessions.unshift(session);
+      state.activeSessionId = id;
+      saveSessions();
+      renderHistory();
+      return session;
+    }
+
+    function getActiveSession() {
+      return state.sessions.find((session) => session.id === state.activeSessionId) || null;
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = state.sessions.map((session) => `
+        <button class="history-item ${session.id === state.activeSessionId ? 'active' : ''}" data-id="${session.id}">${escapeHtml(session.title || 'New research')}</button>
+      `).join('');
+      historyList.querySelectorAll('.history-item').forEach((button) => {
+        button.addEventListener('click', () => {
+          openSession(button.dataset.id);
+          if (window.innerWidth <= 900) sidebar.classList.remove('open');
+        });
+      });
     }
 
     function renderAnswer(markdown) {
       if (!markdown.trim()) {
-        answerBody.innerHTML = '<div class="answer-placeholder">Mentrophi is thinking…</div>';
+        answerBody.innerHTML = '<div class="placeholder">Ask a question to begin your research.</div>';
         return;
       }
-
       let html = marked.parse(markdown);
       html = html.replace(/\[(\d+)\]/g, '<sup><a href="#source-$1">[$1]</a></sup>');
       answerBody.innerHTML = html;
     }
 
+    function renderSourcesMarkup(sources) {
+      return sources.map((source, index) => `
+        <div id="source-${index + 1}" class="source-item">
+          <div class="source-ref">[${index + 1}]</div>
+          <a class="source-link" href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title || 'Untitled source')}</a>
+          <div class="source-domain">${escapeHtml(source.domain || source.displayUrl || '')}</div>
+          <div class="source-snippet">${escapeHtml(source.content || source.snippet || '')}</div>
+        </div>
+      `).join('');
+    }
+
     function renderSources(sources) {
-      sourcesList.innerHTML = sources.map((source, index) => {
-        let hostname = source.displayUrl || source.url;
-        try { hostname = new URL(source.url).hostname.replace(/^www\./, ''); } catch (_) {}
-        return `
-          <a id="source-${index + 1}" class="source-card" href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">
-            <div class="source-top">
-              <span class="source-index">[${index + 1}]</span>
-              <span class="source-title">${escapeHtml(source.title || 'Untitled source')}</span>
-            </div>
-            <div class="source-domain">${escapeHtml(hostname)}</div>
-            <div class="source-snippet">${escapeHtml(source.snippet || 'No preview available.')}</div>
-          </a>
-        `;
-      }).join('');
+      state.currentSources = sources;
+      const markup = renderSourcesMarkup(sources);
+      sourcesList.innerHTML = markup;
+      mobileSources.innerHTML = markup;
+      mobileSourcesToggle.textContent = `Sources (${sources.length})`;
     }
 
-    function setStatus(text) {
-      statusText.textContent = text;
-    }
+    function setStatus(text) { statusText.textContent = text; }
 
-    async function streamResearch(query) {
-      if (!query.trim()) return;
-
-      showResults(query);
-
-      if (state.abortController) {
-        state.abortController.abort();
-      }
-
-      state.abortController = new AbortController();
-      const userMessage = { role: 'user', content: query.trim() };
-      state.history.push(userMessage);
-      state.currentAnswer = '';
-      sourcesList.innerHTML = '';
+    function showHome() {
+      homeState.style.display = 'grid';
+      articleView.classList.remove('active');
+      topQuery.textContent = 'New research';
       renderAnswer('');
+      renderSources([]);
+      setStatus('Idle');
+    }
+
+    function showArticle(session) {
+      homeState.style.display = 'none';
+      articleView.classList.add('active');
+      topQuery.textContent = session.query || session.title || 'Research';
+      renderAnswer(session.answer || '');
+      renderSources(session.sources || []);
+      setStatus(session.answer ? 'Ready' : 'Idle');
+    }
+
+    function openSession(sessionId) {
+      state.activeSessionId = sessionId;
+      renderHistory();
+      const session = getActiveSession();
+      if (!session || (!session.query && !session.answer)) showHome();
+      else showArticle(session);
+      saveSessions();
+    }
+
+    async function runResearch(query) {
+      const trimmed = query.trim();
+      if (!trimmed) return;
+
+      if (state.abortController) state.abortController.abort();
+      state.abortController = new AbortController();
+
+      let session = getActiveSession();
+      if (!session || session.answer || session.history.length) session = createSession(trimmed);
+      session.query = trimmed;
+      session.title = trimmed.slice(0, 42);
+      session.history.push({ role: 'user', content: trimmed });
+      session.answer = '';
+      session.sources = [];
+      state.currentAnswer = '';
+      renderHistory();
+      showArticle(session);
+      renderAnswer('');
+      renderSources([]);
       setStatus('Researching');
+      saveSessions();
 
       try {
         const response = await fetch('/api/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: query.trim(), history: state.history }),
+          body: JSON.stringify({ query: trimmed, history: session.history }),
           signal: state.abortController.signal,
         });
 
@@ -454,106 +327,114 @@
           try {
             const error = await response.json();
             message = error.error || message;
-          } catch (_) {}
+          } catch {}
           throw new Error(message);
         }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
-        let activeEvent = 'message';
         let finished = false;
 
         while (!finished) {
           const { value, done } = await reader.read();
           if (done) break;
-
           buffer += decoder.decode(value, { stream: true });
           const events = buffer.split('\n\n');
           buffer = events.pop() || '';
 
           for (const rawEvent of events) {
             const lines = rawEvent.split('\n').filter(Boolean);
-            let eventName = activeEvent;
+            let eventName = 'message';
             let dataLine = '';
-
             for (const line of lines) {
               if (line.startsWith('event:')) eventName = line.slice(6).trim();
               if (line.startsWith('data:')) dataLine += line.slice(5).trim();
             }
-
             if (!dataLine) continue;
             const payload = JSON.parse(dataLine);
 
             if (eventName === 'sources') {
-              renderSources(payload.sources || []);
-            }
-            if (eventName === 'chunk') {
+              session.sources = payload.sources || [];
+              renderSources(session.sources);
+              saveSessions();
+            } else if (eventName === 'chunk') {
               state.currentAnswer += payload.content || '';
-              renderAnswer(state.currentAnswer);
+              session.answer = state.currentAnswer;
+              renderAnswer(session.answer);
               setStatus('Streaming');
-            }
-            if (eventName === 'error') {
+              saveSessions();
+            } else if (eventName === 'error') {
               throw new Error(payload.error || 'Streaming error.');
-            }
-            if (eventName === 'done') {
+            } else if (eventName === 'done') {
               finished = true;
               break;
             }
           }
         }
 
-        state.history.push({ role: 'assistant', content: state.currentAnswer.trim() });
+        session.history.push({ role: 'assistant', content: session.answer.trim() });
         setStatus('Complete');
+        saveSessions();
       } catch (error) {
         if (error.name === 'AbortError') {
           setStatus('Canceled');
           return;
         }
-        answerBody.innerHTML = `<div class="answer-placeholder">${escapeHtml(error.message || 'Something went wrong.')}</div>`;
+        answerBody.innerHTML = `<div class="placeholder">${escapeHtml(error.message || 'Something went wrong.')}</div>`;
         setStatus('Error');
       } finally {
         state.abortController = null;
       }
     }
 
-    function submitFromInput(input) {
+    function submitInput(input) {
       const value = input.value.trim();
       if (!value) return;
       input.value = '';
-      streamResearch(value);
+      runResearch(value);
     }
 
-    [homeInput, topSearchInput, followupInput].forEach((input) => {
+    [homeInput, followupInput].forEach((input) => {
       input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
           event.preventDefault();
-          submitFromInput(input);
+          submitInput(input);
         }
       });
     });
 
+    homeSend.addEventListener('click', () => submitInput(homeInput));
+    followupSend.addEventListener('click', () => submitInput(followupInput));
+    newChatBtn.addEventListener('click', () => {
+      state.activeSessionId = null;
+      createSession('');
+      openSession(state.activeSessionId);
+      homeInput.focus();
+    });
+    clearThreadBtn.addEventListener('click', () => {
+      state.activeSessionId = null;
+      showHome();
+      renderHistory();
+    });
+    menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
+    mobileSourcesToggle.addEventListener('click', () => mobileSources.classList.toggle('open'));
+
     document.querySelectorAll('.chip').forEach((chip) => {
       chip.addEventListener('click', () => {
-        const query = chip.dataset.query || '';
-        homeInput.value = query;
-        submitFromInput(homeInput);
+        homeInput.value = chip.dataset.query || '';
+        submitInput(homeInput);
       });
     });
 
-    backHome.addEventListener('click', showHome);
-    clearThread.addEventListener('click', () => {
-      state.history = [];
-      state.currentAnswer = '';
-      answerBody.innerHTML = '<div class="answer-placeholder">Thread cleared. Ask a fresh question.</div>';
-      sourcesList.innerHTML = '';
-      setStatus('Idle');
-      topSearchInput.value = '';
-      followupInput.value = '';
-      followupInput.focus();
-    });
-
-    homeInput.focus();
+    loadSessions();
+    if (state.sessions.length) {
+      state.activeSessionId = state.sessions[0].id;
+      openSession(state.activeSessionId);
+    } else {
+      showHome();
+      renderHistory();
+    }
   </script>
 </body>
 </html>
