@@ -11,6 +11,9 @@ Cite sources inline as [1], [2]. Always respond in the same
 language as the user query. Go deeper than surface-level --
 explain the why, the tradeoffs, the context, the nuance.`;
 
+const DEFAULT_AI_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_AI_MODEL = 'z-ai/glm5';
+
 function decodeHtml(value = '') {
   return value
     .replace(/<[^>]*>/g, ' ')
@@ -95,6 +98,16 @@ function sseData(event, data) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
+function getAiConfig(env) {
+  return {
+    apiKey: env.AI_API_KEY || env.OPENROUTER_API_KEY || env.NVIDIA_API_KEY || '',
+    baseUrl: env.AI_BASE_URL || DEFAULT_AI_BASE_URL,
+    model: env.AI_MODEL || DEFAULT_AI_MODEL,
+    siteUrl: env.AI_SITE_URL || env.CF_PAGES_URL || '',
+    siteName: env.AI_SITE_NAME || 'Mentrophi',
+  };
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -119,8 +132,10 @@ export async function onRequest(context) {
       });
     }
 
-    if (!env.NVIDIA_API_KEY) {
-      return new Response(JSON.stringify({ error: 'Missing NVIDIA_API_KEY' }), {
+    const aiConfig = getAiConfig(env);
+
+    if (!aiConfig.apiKey) {
+      return new Response(JSON.stringify({ error: 'Missing AI_API_KEY (or OPENROUTER_API_KEY)' }), {
         status: 500,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
@@ -137,23 +152,25 @@ export async function onRequest(context) {
     const searchHtml = await searchResponse.text();
     const sources = extractSearchResults(searchHtml);
 
-    const nimResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+    const aiResponse = await fetch(aiConfig.baseUrl, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${env.NVIDIA_API_KEY}`,
+        Authorization: `Bearer ${aiConfig.apiKey}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': aiConfig.siteUrl,
+        'X-Title': aiConfig.siteName,
       },
       body: JSON.stringify({
-        model: 'meta/llama-4-scout-17b-16e-instruct',
+        model: aiConfig.model,
         stream: true,
         temperature: 0.4,
         messages: formatHistory(Array.isArray(history) ? history : [{ role: 'user', content: query }], sources),
       }),
     });
 
-    if (!nimResponse.ok || !nimResponse.body) {
-      const errorText = await nimResponse.text();
-      throw new Error(`NVIDIA NIM failed: ${nimResponse.status} ${errorText}`);
+    if (!aiResponse.ok || !aiResponse.body) {
+      const errorText = await aiResponse.text();
+      throw new Error(`AI provider failed (${aiConfig.model}): ${aiResponse.status} ${errorText}`);
     }
 
     const encoder = new TextEncoder();
@@ -163,7 +180,7 @@ export async function onRequest(context) {
       async start(controller) {
         controller.enqueue(encoder.encode(sseData('sources', { sources })));
 
-        const reader = nimResponse.body.getReader();
+        const reader = aiResponse.body.getReader();
         let buffer = '';
 
         try {
@@ -193,7 +210,7 @@ export async function onRequest(context) {
                   controller.enqueue(encoder.encode(sseData('chunk', { content: delta })));
                 }
               } catch (error) {
-                controller.enqueue(encoder.encode(sseData('error', { error: 'Failed to parse NVIDIA stream chunk.' })));
+                controller.enqueue(encoder.encode(sseData('error', { error: 'Failed to parse AI stream chunk.' })));
               }
             }
           }
