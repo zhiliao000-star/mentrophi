@@ -4,13 +4,14 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const SYSTEM_PROMPT = `You are Mentrophi. Synthesize information from ALL provided sources. Present multiple viewpoints and international perspectives. Use ## headings. Cite every claim as [1][2]. Explain the why, tradeoffs, history, and nuance. Respond in the user's language.`;
+const DEFAULT_SYSTEM_PROMPT = `You are Mentrophi. Synthesize information from ALL provided sources. Present multiple viewpoints and international perspectives. Use ## headings. Cite every claim as [1][2]. Explain the why, tradeoffs, history, and nuance. Respond in the user's language.`;
+const CODE_SYSTEM_PROMPT = `You are Mentrophi in Code Mode. You have just researched this technology. Write production-quality code that avoids the common pitfalls you found. Every non-obvious decision must have a comment. Never use deprecated APIs. Always use the latest stable patterns.`;
 
 const NVIDIA_CHAT_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const DEFAULT_AI_MODEL = 'z-ai/glm5';
 const USER_AGENT = 'Mozilla/5.0';
 const MAX_RESULTS_PER_SEARCH = 3;
-const MAX_SOURCE_CHARS = 600;
+const MAX_SOURCE_CHARS = 800;
 
 function decodeHtml(value = '') {
   return value
@@ -49,7 +50,34 @@ function looksLikeCurrentQuery(query = '') {
   return /(today|news|latest|current|breaking|election|stock|score|war|conflict|president|minister|earthquake|hurricane|update|202\d|20\d\d)/i.test(query);
 }
 
+function isCodeQuery(query = '') {
+  return /(write|build|create|code|function|script|implement|program|debug|refactor|api|component|app|endpoint|algorithm|sql|javascript|typescript|python|react|node|express|next\.js|html|css)/i.test(query);
+}
+
+function extractTechnology(query = '') {
+  const patterns = [
+    /\b(?:in|using|with|for)\s+([a-z0-9.+#\-\/ ]{2,40})/i,
+    /\b(react|next\.js|vue|svelte|node(?:\.js)?|express|fastapi|django|flask|typescript|javascript|python|tailwind|supabase|postgres(?:ql)?|mysql|sqlite|cloudflare|workers|hono|astro|vite|electron|deno)\b/i,
+  ];
+  for (const pattern of patterns) {
+    const match = query.match(pattern);
+    if (match?.[1]) return match[1].trim();
+    if (match?.[0]) return match[0].trim();
+  }
+  const words = query.split(/\s+/).filter(Boolean);
+  return words.slice(0, 4).join(' ');
+}
+
 function buildSearchQueries(query) {
+  if (isCodeQuery(query)) {
+    const tech = extractTechnology(query);
+    return [
+      `${tech} latest version 2025`,
+      `${tech} common mistakes pitfalls`,
+      `${tech} best practices`,
+    ];
+  }
+
   const year = new Date().getFullYear();
   const queries = [query, `${query} news`, `${query} analysis`];
   if (looksLikeCurrentQuery(query)) queries.push(`${query} ${year}`);
@@ -131,9 +159,10 @@ async function collectSources(query) {
   }));
 }
 
-function formatHistory(history, query, sources) {
+function formatHistory(history, query, sources, codeMode) {
   const safeHistory = Array.isArray(history) ? history : [];
-  const messages = [{ role: 'system', content: SYSTEM_PROMPT }];
+  const systemPrompt = codeMode ? CODE_SYSTEM_PROMPT : DEFAULT_SYSTEM_PROMPT;
+  const messages = [{ role: 'system', content: systemPrompt }];
 
   for (const item of safeHistory) {
     if (!item || typeof item.role !== 'string' || typeof item.content !== 'string') continue;
@@ -141,13 +170,18 @@ function formatHistory(history, query, sources) {
     messages.push({ role: item.role, content: item.content });
   }
 
+  const researchSummary = codeMode
+    ? `Research checklist completed: latest stable version guidance, common pitfalls, and best practices for ${extractTechnology(query)}.`
+    : 'Use all of the following source material in your synthesis:';
+
   messages.push({
     role: 'user',
     content: [
       `User query: ${query}`,
       '',
-      'Use all of the following source material in your synthesis:',
+      researchSummary,
       ...sources.map((source) => `${source.ref} ${source.title}\nDomain: ${source.domain}\nURL: ${source.url}\nSnippet: ${source.snippet || 'N/A'}\nContent: ${source.content || 'N/A'}`),
+      ...(codeMode ? ['', 'If you write code, start with a short comment header in the code: `// Researched: ...`'] : []),
     ].join('\n\n'),
   });
 
@@ -186,6 +220,7 @@ export async function onRequest(context) {
       });
     }
 
+    const codeMode = isCodeQuery(query);
     const sources = await collectSources(query);
 
     const aiResponse = await fetch(NVIDIA_CHAT_URL, {
@@ -197,8 +232,8 @@ export async function onRequest(context) {
       body: JSON.stringify({
         model: env.AI_MODEL || DEFAULT_AI_MODEL,
         stream: true,
-        temperature: 0.35,
-        messages: formatHistory(history, query, sources),
+        temperature: codeMode ? 0.2 : 0.35,
+        messages: formatHistory(history, query, sources, codeMode),
       }),
     });
 
@@ -212,6 +247,7 @@ export async function onRequest(context) {
 
     const stream = new ReadableStream({
       async start(controller) {
+        controller.enqueue(encoder.encode(sseData('meta', { codeMode })));
         controller.enqueue(encoder.encode(sseData('sources', { sources })));
         const reader = aiResponse.body.getReader();
         let buffer = '';

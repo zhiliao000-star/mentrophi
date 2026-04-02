@@ -10,212 +10,20 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    :root {
-      --bg: #F5F0E8;
-      --sidebar: #EDEAE0;
-      --surface: #EDEAE0;
-      --text: #1A1A1A;
-      --accent: #C84B31;
-      --border: #D4CFC4;
-      --muted: #6B6560;
-    }
-
-    * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
-    body { font-family: 'DM Mono', monospace; font-size: 16px; line-height: 1.8; }
-    button, input, textarea { font: inherit; color: inherit; }
-    button { background: transparent; border: 0; padding: 0; cursor: pointer; }
-    a { color: inherit; text-decoration: none; }
-
-    .app { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
-    .overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(26, 26, 26, 0.24);
-      z-index: 15;
-    }
-
-    .sidebar {
-      background: var(--sidebar);
-      border-right: 1px solid var(--border);
-      padding: 18px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      z-index: 20;
-    }
-
-    .sidebar-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .brand { color: var(--accent); letter-spacing: 0.12em; font-size: 14px; display: flex; gap: 8px; align-items: center; }
-    .sidebar-close {
-      display: none;
-      width: 28px;
-      height: 28px;
-      align-items: center;
-      justify-content: center;
-      color: var(--accent);
-      font-size: 18px;
-    }
-
-    .new-chat { border: 1px solid var(--accent); color: var(--accent); padding: 10px 12px; border-radius: 0; text-align: left; }
-    .history-title { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; padding-top: 4px; border-top: 1px solid var(--border); }
-    .history-list { display: grid; gap: 6px; }
-    .history-item { padding: 10px 8px; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
-    .history-item.active, .history-item:hover { background: rgba(200,75,49,0.08); color: var(--text); }
-
-    .main { display: flex; flex-direction: column; min-width: 0; }
-    .topbar { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
-    .menu-btn { display: none; font-size: 20px; color: var(--accent); }
-    .top-query { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .rule { height: 1px; background: var(--border); margin: 0 24px; }
-    .content-wrap { flex: 1; overflow: auto; padding: 28px 24px 124px; }
-    .article-shell { max-width: 680px; margin: 0 auto; width: 100%; padding-left: 20px; padding-right: 20px; }
-
-    .home-state { min-height: calc(100vh - 188px); display: grid; place-items: center; text-align: center; }
-    .home-inner { width: min(100%, 760px); }
-    .hero-mark { color: var(--accent); font-size: 46px; margin-bottom: 12px; }
-    .hero-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: clamp(32px, 5vw, 40px); font-weight: 400; margin: 0 0 26px; }
-
-    .composer { position: relative; width: 100%; }
-    .composer-input {
-      width: 100%;
-      background: rgba(255,255,255,0.45);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 18px 56px 18px 18px;
-      outline: none;
-      box-shadow: 0 10px 30px rgba(26,26,26,0.06);
-    }
-    .composer-input::placeholder { color: var(--muted); }
-    .send-btn {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 32px;
-      height: 32px;
-      border-radius: 999px;
-      background: var(--accent);
-      color: #fff;
-      display: grid;
-      place-items: center;
-      font-size: 16px;
-    }
-
-    .chips { margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-    .chip { border: 1px solid var(--border); padding: 8px 12px; background: transparent; }
-
-    .article { display: none; }
-    .article.active { display: block; }
-    .article-body { font-size: 15px; line-height: 1.8; overflow-wrap: anywhere; }
-    .article-body h1,
-    .article-body h2,
-    .article-body h3,
-    .article-body h4 {
-      font-family: 'Playfair Display', serif;
-      line-height: 1.2;
-      font-weight: 600;
-      margin: 1.5em 0 0.8em;
-    }
-    .article-body h2 { font-size: 22px; }
-    .article-body h1:first-child,
-    .article-body h2:first-child,
-    .article-body p:first-child { margin-top: 0; }
-    .article-body p,
-    .article-body li {
-      font-family: 'DM Mono', monospace;
-      font-size: 15px;
-      line-height: 1.8;
-      margin: 0 0 24px;
-    }
-    .article-body ul,
-    .article-body ol { padding-left: 1.3rem; }
-    .article-body sup a {
-      color: var(--accent);
-      text-decoration: none;
-      font-size: 0.8em;
-      vertical-align: super;
-    }
-    .article-body blockquote { border-left: 1px solid var(--accent); margin: 1rem 0 1.5rem; padding-left: 1rem; color: var(--muted); }
-    .placeholder { color: var(--muted); }
-
-    .sources-inline {
-      margin-top: 40px;
-      padding-top: 18px;
-      border-top: 1px solid var(--border);
-    }
-    .sources-inline h3 {
-      margin: 0 0 14px;
-      font-family: 'Playfair Display', serif;
-      font-size: 20px;
-      font-weight: 600;
-    }
-    .sources-footnotes {
-      display: grid;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-    .sources-footnotes a { text-decoration: underline; text-underline-offset: 2px; }
-    .sources-footnotes .domain { color: var(--muted); }
-    .sources-footnotes .footnote-index { color: var(--accent); }
-
-    .bottom-composer {
-      display: none;
-      position: fixed;
-      left: 240px;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(to top, var(--bg) 70%, rgba(245,240,232,0));
-      padding: 16px 24px 20px;
-    }
-    .bottom-composer.visible { display: block; }
-    .bottom-composer .composer { max-width: 680px; margin: 0 auto; padding-left: 20px; padding-right: 20px; }
-    .bottom-composer .composer-input {
-      border-radius: 0;
-      background: var(--surface);
-      box-shadow: none;
-      padding: 16px 52px 16px 16px;
-    }
-    .bottom-composer .send-btn { width: 28px; height: 28px; font-size: 14px; }
-
-    .status { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; }
-
-    @media (max-width: 900px) {
-      .app { grid-template-columns: 1fr; }
-      .overlay.open { display: block; }
-      .sidebar {
-        position: fixed;
-        inset: 0 auto 0 0;
-        width: 240px;
-        transform: translateX(-100%);
-        transition: transform 0.25s ease;
-        box-shadow: 12px 0 30px rgba(0,0,0,0.08);
-      }
-      .sidebar.open { transform: translateX(0); }
-      .sidebar-close { display: inline-flex; }
-      .menu-btn { display: block; }
-      .topbar { padding: 0 16px; }
-      .rule { margin: 0 16px; }
-      .content-wrap { padding: 22px 0 120px; }
-      .article-shell { padding-left: 20px; padding-right: 20px; }
-      .chips { justify-content: flex-start; }
-      .home-state { text-align: left; }
-      .hero-title { font-size: 32px; }
-      .bottom-composer { left: 0; right: 0; padding: 12px 0 16px; }
-      .bottom-composer .composer { padding-left: 20px; padding-right: 20px; }
-      .article-body { font-size: 16px; }
-      .article-body p,
-      .article-body li { font-size: 16px; }
-    }
+    :root { --bg:#F5F0E8; --sidebar:#EDEAE0; --surface:#EDEAE0; --text:#1A1A1A; --accent:#C84B31; --border:#D4CFC4; --muted:#6B6560; }
+    *{box-sizing:border-box} html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)} body{font-family:'DM Mono',monospace;font-size:16px;line-height:1.8}
+    button,input,textarea{font:inherit;color:inherit} button{background:transparent;border:0;padding:0;cursor:pointer} a{color:inherit;text-decoration:none}
+    .app{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}.overlay{display:none;position:fixed;inset:0;background:rgba(26,26,26,.24);z-index:15}.sidebar{background:var(--sidebar);border-right:1px solid var(--border);padding:18px 14px;display:flex;flex-direction:column;gap:18px;z-index:20}
+    .sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{color:var(--accent);letter-spacing:.12em;font-size:14px;display:flex;gap:8px;align-items:center}.sidebar-close{display:none;width:28px;height:28px;align-items:center;justify-content:center;color:var(--accent);font-size:18px}
+    .new-chat{border:1px solid var(--accent);color:var(--accent);padding:10px 12px;border-radius:0;text-align:left}.history-title{font-size:11px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;padding-top:4px;border-top:1px solid var(--border)}.history-list{display:grid;gap:6px}.history-item{padding:10px 8px;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}.history-item.active,.history-item:hover{background:rgba(200,75,49,.08);color:var(--text)}
+    .main{display:flex;flex-direction:column;min-width:0}.topbar{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 24px}.menu-btn{display:none;font-size:20px;color:var(--accent)}.top-query{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rule{height:1px;background:var(--border);margin:0 24px}.content-wrap{flex:1;overflow:auto;padding:28px 24px 124px}.article-shell{max-width:680px;margin:0 auto;width:100%;padding-left:20px;padding-right:20px}
+    .home-state{min-height:calc(100vh - 188px);display:grid;place-items:center;text-align:center}.home-inner{width:min(100%,760px)}.hero-mark{color:var(--accent);font-size:46px;margin-bottom:12px}.hero-title{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(32px,5vw,40px);font-weight:400;margin:0 0 26px}
+    .composer{position:relative;width:100%}.composer-input{width:100%;background:rgba(255,255,255,.45);border:1px solid var(--border);border-radius:12px;padding:18px 56px 18px 18px;outline:none;box-shadow:0 10px 30px rgba(26,26,26,.06)}.composer-input::placeholder{color:var(--muted)}.send-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:999px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:16px}
+    .chips{margin-top:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.chip{border:1px solid var(--border);padding:8px 12px;background:transparent}.article{display:none}.article.active{display:block}.article-body{font-size:15px;line-height:1.8;overflow-wrap:anywhere}.article-body h1,.article-body h2,.article-body h3,.article-body h4{font-family:'Playfair Display',serif;line-height:1.2;font-weight:600;margin:1.5em 0 .8em}.article-body h2{font-size:22px}.article-body h1:first-child,.article-body h2:first-child,.article-body p:first-child{margin-top:0}.article-body p,.article-body li{font-family:'DM Mono',monospace;font-size:15px;line-height:1.8;margin:0 0 24px}.article-body ul,.article-body ol{padding-left:1.3rem}.article-body sup a{color:var(--accent);text-decoration:none;font-size:.8em;vertical-align:super}.article-body blockquote{border-left:1px solid var(--accent);margin:1rem 0 1.5rem;padding-left:1rem;color:var(--muted)}.article-body pre{background:#fff;border:1px solid var(--border);padding:14px;overflow:auto;margin:0 0 16px}.article-body code{font-family:'DM Mono',monospace}.placeholder{color:var(--muted)}
+    .share-wrap{margin:12px 0 24px}.share-btn,.toast-copy{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);color:var(--accent);padding:8px 12px}.share-btn[disabled]{opacity:.5;cursor:not-allowed}.toast{position:fixed;right:20px;bottom:92px;background:var(--surface);border:1px solid var(--border);padding:12px 14px;max-width:320px;display:none;z-index:30}.toast.show{display:block}
+    .sources-inline{margin-top:40px;padding-top:18px;border-top:1px solid var(--border)}.sources-inline h3{margin:0 0 14px;font-family:'Playfair Display',serif;font-size:20px;font-weight:600}.sources-footnotes{display:grid;gap:8px;color:var(--muted);font-size:13px;line-height:1.6}.sources-footnotes a{text-decoration:underline;text-underline-offset:2px}.sources-footnotes .domain{color:var(--muted)}.sources-footnotes .footnote-index{color:var(--accent)}
+    .bottom-composer{display:none;position:fixed;left:240px;right:0;bottom:0;background:linear-gradient(to top,var(--bg) 70%, rgba(245,240,232,0));padding:16px 24px 20px}.bottom-composer.visible{display:block}.bottom-composer .composer{max-width:680px;margin:0 auto;padding-left:20px;padding-right:20px}.bottom-composer .composer-input{border-radius:0;background:var(--surface);box-shadow:none;padding:16px 52px 16px 16px}.bottom-composer .send-btn{width:28px;height:28px;font-size:14px}.status{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.12em}
+    @media (max-width:900px){.app{grid-template-columns:1fr}.overlay.open{display:block}.sidebar{position:fixed;inset:0 auto 0 0;width:240px;transform:translateX(-100%);transition:transform .25s ease;box-shadow:12px 0 30px rgba(0,0,0,.08)}.sidebar.open{transform:translateX(0)}.sidebar-close{display:inline-flex}.menu-btn{display:block}.topbar{padding:0 16px}.rule{margin:0 16px}.content-wrap{padding:22px 0 120px}.article-shell{padding-left:20px;padding-right:20px}.chips{justify-content:flex-start}.home-state{text-align:left}.hero-title{font-size:32px}.bottom-composer{left:0;right:0;padding:12px 0 16px}.bottom-composer .composer{padding-left:20px;padding-right:20px}.article-body{font-size:16px}.article-body p,.article-body li{font-size:16px}.toast{left:20px;right:20px;max-width:none}}
   </style>
 </head>
 <body>
@@ -230,344 +38,41 @@
       <div class="history-title">History</div>
       <div id="historyList" class="history-list"></div>
     </aside>
-
     <main class="main">
-      <div class="topbar">
-        <button id="menuBtn" class="menu-btn">☰</button>
-        <div id="topQuery" class="top-query">New research</div>
-        <div id="statusText" class="status">Idle</div>
-      </div>
+      <div class="topbar"><button id="menuBtn" class="menu-btn">☰</button><div id="topQuery" class="top-query">New research</div><div id="statusText" class="status">Idle</div></div>
       <div class="rule"></div>
-      <div class="content-wrap">
-        <div class="article-shell">
-          <section id="homeState" class="home-state">
-            <div class="home-inner">
-              <div class="hero-mark">◆</div>
-              <h1 class="hero-title">What do you want to know?</h1>
-              <div class="composer">
-                <input id="homeInput" class="composer-input" type="text" placeholder="Ask anything..." autocomplete="off" />
-                <button id="homeSend" class="send-btn" aria-label="Send">↑</button>
-              </div>
-              <div class="chips">
-                <button class="chip" data-query="Climate tipping points">Climate tipping points</button>
-                <button class="chip" data-query="How LLMs work">How LLMs work</button>
-                <button class="chip" data-query="Stoicism today">Stoicism today</button>
-              </div>
-            </div>
-          </section>
-
-          <section id="articleView" class="article">
-            <div id="answerBody" class="article-body">
-              <div class="placeholder">Ask a question to begin your research.</div>
-            </div>
-            <section id="sourcesInline" class="sources-inline" hidden>
-              <h3>Sources</h3>
-              <div id="sourcesList" class="sources-footnotes"></div>
-            </section>
-          </section>
-        </div>
-      </div>
-
-      <div id="bottomComposer" class="bottom-composer">
-        <div class="composer">
-          <input id="followupInput" class="composer-input" type="text" placeholder="Go deeper..." autocomplete="off" />
-          <button id="followupSend" class="send-btn" aria-label="Send">↑</button>
-        </div>
-      </div>
+      <div class="content-wrap"><div class="article-shell"><section id="homeState" class="home-state"><div class="home-inner"><div class="hero-mark">◆</div><h1 class="hero-title">What do you want to know?</h1><div class="composer"><input id="homeInput" class="composer-input" type="text" placeholder="Ask anything..." autocomplete="off" /><button id="homeSend" class="send-btn" aria-label="Send">↑</button></div><div class="chips"><button class="chip" data-query="Climate tipping points">Climate tipping points</button><button class="chip" data-query="How LLMs work">How LLMs work</button><button class="chip" data-query="Stoicism today">Stoicism today</button></div></div></section><section id="articleView" class="article"><div id="answerBody" class="article-body"><div class="placeholder">Ask a question to begin your research.</div></div><section id="sourcesInline" class="sources-inline" hidden><h3>Sources</h3><div id="sourcesList" class="sources-footnotes"></div></section></section></div></div>
+      <div id="bottomComposer" class="bottom-composer"><div class="composer"><input id="followupInput" class="composer-input" type="text" placeholder="Go deeper..." autocomplete="off" /><button id="followupSend" class="send-btn" aria-label="Send">↑</button></div></div>
     </main>
   </div>
-
+  <div id="toast" class="toast"></div>
   <script>
-    const STORAGE_KEY = 'mentrophi-history-v1';
-    const state = {
-      sessions: [],
-      activeSessionId: null,
-      currentAnswer: '',
-      currentSources: [],
-      abortController: null,
-    };
-
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    const menuBtn = document.getElementById('menuBtn');
-    const sidebarClose = document.getElementById('sidebarClose');
-    const newChatBtn = document.getElementById('newChatBtn');
-    const historyList = document.getElementById('historyList');
-    const homeState = document.getElementById('homeState');
-    const articleView = document.getElementById('articleView');
-    const homeInput = document.getElementById('homeInput');
-    const homeSend = document.getElementById('homeSend');
-    const followupInput = document.getElementById('followupInput');
-    const followupSend = document.getElementById('followupSend');
-    const bottomComposer = document.getElementById('bottomComposer');
-    const answerBody = document.getElementById('answerBody');
-    const sourcesInline = document.getElementById('sourcesInline');
-    const sourcesList = document.getElementById('sourcesList');
-    const statusText = document.getElementById('statusText');
-    const topQuery = document.getElementById('topQuery');
-
-    marked.setOptions({ breaks: true, gfm: true });
-
-    function escapeHtml(text = '') {
-      return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function closeSidebar() {
-      sidebar.classList.remove('open');
-      overlay.classList.remove('open');
-    }
-
-    function openSidebar() {
-      sidebar.classList.add('open');
-      overlay.classList.add('open');
-    }
-
-    function saveSessions() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.sessions));
-    }
-
-    function loadSessions() {
-      try {
-        state.sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      } catch {
-        state.sessions = [];
-      }
-    }
-
-    function createSession(query = '') {
-      const id = crypto.randomUUID();
-      const title = query ? query.slice(0, 42) : 'New research';
-      const session = { id, title, query, history: [], answer: '', sources: [] };
-      state.sessions.unshift(session);
-      state.activeSessionId = id;
-      saveSessions();
-      renderHistory();
-      return session;
-    }
-
-    function getActiveSession() {
-      return state.sessions.find((session) => session.id === state.activeSessionId) || null;
-    }
-
-    function renderHistory() {
-      historyList.innerHTML = state.sessions.map((session) => `
-        <button class="history-item ${session.id === state.activeSessionId ? 'active' : ''}" data-id="${session.id}">${escapeHtml(session.title || 'New research')}</button>
-      `).join('');
-      historyList.querySelectorAll('.history-item').forEach((button) => {
-        button.addEventListener('click', () => {
-          openSession(button.dataset.id);
-          closeSidebar();
-        });
-      });
-    }
-
-    function renderAnswer(markdown) {
-      if (!markdown.trim()) {
-        answerBody.innerHTML = '<div class="placeholder">Ask a question to begin your research.</div>';
-        return;
-      }
-      let html = marked.parse(markdown);
-      const superscriptDigits = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
-      html = html.replace(/\[(\d+)\]/g, (_, n) => {
-        const sup = String(n).split('').map((d) => superscriptDigits[d] || d).join('');
-        return `<sup><a href="#source-${n}">${sup}</a></sup>`;
-      });
-      answerBody.innerHTML = html;
-    }
-
-    function renderSources(sources) {
-      state.currentSources = sources;
-      if (!sources.length) {
-        sourcesInline.hidden = true;
-        sourcesList.innerHTML = '';
-        return;
-      }
-      sourcesInline.hidden = false;
-      const superscriptDigits = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
-      sourcesList.innerHTML = sources.map((source, index) => {
-        const n = index + 1;
-        const sup = String(n).split('').map((d) => superscriptDigits[d] || d).join('');
-        const domain = source.domain || source.displayUrl || '';
-        return `<div id="source-${n}"><span class="footnote-index">${sup}</span> <a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title || 'Untitled source')}</a> <span class="domain">— ${escapeHtml(domain)}</span></div>`;
-      }).join('');
-    }
-
-    function setStatus(text) { statusText.textContent = text; }
-
-    function showHome() {
-      homeState.style.display = 'grid';
-      articleView.classList.remove('active');
-      topQuery.textContent = 'New research';
-      renderAnswer('');
-      renderSources([]);
-      bottomComposer.classList.remove('visible');
-      setStatus('Idle');
-    }
-
-    function showArticle(session) {
-      homeState.style.display = 'none';
-      articleView.classList.add('active');
-      topQuery.textContent = session.query || session.title || 'Research';
-      renderAnswer(session.answer || '');
-      renderSources(session.sources || []);
-      bottomComposer.classList.add('visible');
-      setStatus(session.answer ? 'Ready' : 'Idle');
-    }
-
-    function openSession(sessionId) {
-      state.activeSessionId = sessionId;
-      renderHistory();
-      const session = getActiveSession();
-      if (!session || (!session.query && !session.answer)) showHome();
-      else showArticle(session);
-      saveSessions();
-    }
-
-    async function runResearch(query) {
-      const trimmed = query.trim();
-      if (!trimmed) return;
-      if (state.abortController) state.abortController.abort();
-      state.abortController = new AbortController();
-
-      let session = getActiveSession();
-      if (!session || session.answer || session.history.length) session = createSession(trimmed);
-      session.query = trimmed;
-      session.title = trimmed.slice(0, 42);
-      session.history.push({ role: 'user', content: trimmed });
-      session.answer = '';
-      session.sources = [];
-      state.currentAnswer = '';
-      renderHistory();
-      showArticle(session);
-      renderAnswer('');
-      renderSources([]);
-      setStatus('Researching');
-      saveSessions();
-
-      try {
-        const response = await fetch('/api/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: trimmed, history: session.history }),
-          signal: state.abortController.signal,
-        });
-
-        if (!response.ok || !response.body) {
-          let message = 'Request failed.';
-          try {
-            const error = await response.json();
-            message = error.error || message;
-          } catch {}
-          throw new Error(message);
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let finished = false;
-
-        while (!finished) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const events = buffer.split('\n\n');
-          buffer = events.pop() || '';
-
-          for (const rawEvent of events) {
-            const lines = rawEvent.split('\n').filter(Boolean);
-            let eventName = 'message';
-            let dataLine = '';
-            for (const line of lines) {
-              if (line.startsWith('event:')) eventName = line.slice(6).trim();
-              if (line.startsWith('data:')) dataLine += line.slice(5).trim();
-            }
-            if (!dataLine) continue;
-            const payload = JSON.parse(dataLine);
-
-            if (eventName === 'sources') {
-              session.sources = payload.sources || [];
-              renderSources(session.sources);
-              saveSessions();
-            } else if (eventName === 'chunk') {
-              state.currentAnswer += payload.content || '';
-              session.answer = state.currentAnswer;
-              renderAnswer(session.answer);
-              setStatus('Streaming');
-              saveSessions();
-            } else if (eventName === 'error') {
-              throw new Error(payload.error || 'Streaming error.');
-            } else if (eventName === 'done') {
-              finished = true;
-              break;
-            }
-          }
-        }
-
-        session.history.push({ role: 'assistant', content: session.answer.trim() });
-        setStatus('Complete');
-        saveSessions();
-      } catch (error) {
-        if (error.name === 'AbortError') {
-          setStatus('Canceled');
-          return;
-        }
-        answerBody.innerHTML = `<div class="placeholder">${escapeHtml(error.message || 'Something went wrong.')}</div>`;
-        setStatus('Error');
-      } finally {
-        state.abortController = null;
-      }
-    }
-
-    function submitInput(input) {
-      const value = input.value.trim();
-      if (!value) return;
-      input.value = '';
-      runResearch(value);
-    }
-
-    [homeInput, followupInput].forEach((input) => {
-      input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          submitInput(input);
-        }
-      });
-    });
-
-    homeSend.addEventListener('click', () => submitInput(homeInput));
-    followupSend.addEventListener('click', () => submitInput(followupInput));
-    newChatBtn.addEventListener('click', () => {
-      state.activeSessionId = null;
-      createSession('');
-      openSession(state.activeSessionId);
-      homeInput.focus();
-      closeSidebar();
-    });
-
-    menuBtn.addEventListener('click', openSidebar);
-    sidebarClose.addEventListener('click', closeSidebar);
-    overlay.addEventListener('click', closeSidebar);
-
-    document.querySelectorAll('.chip').forEach((chip) => {
-      chip.addEventListener('click', () => {
-        homeInput.value = chip.dataset.query || '';
-        submitInput(homeInput);
-      });
-    });
-
-    loadSessions();
-    if (state.sessions.length) {
-      state.activeSessionId = state.sessions[0].id;
-      openSession(state.activeSessionId);
-    } else {
-      showHome();
-      renderHistory();
-    }
+    const STORAGE_KEY='mentrophi-history-v1';
+    const state={sessions:[],activeSessionId:null,currentAnswer:'',currentSources:[],abortController:null,currentMeta:{codeMode:false}};
+    const sidebar=document.getElementById('sidebar'),overlay=document.getElementById('overlay'),menuBtn=document.getElementById('menuBtn'),sidebarClose=document.getElementById('sidebarClose'),newChatBtn=document.getElementById('newChatBtn'),historyList=document.getElementById('historyList'),homeState=document.getElementById('homeState'),articleView=document.getElementById('articleView'),homeInput=document.getElementById('homeInput'),homeSend=document.getElementById('homeSend'),followupInput=document.getElementById('followupInput'),followupSend=document.getElementById('followupSend'),bottomComposer=document.getElementById('bottomComposer'),answerBody=document.getElementById('answerBody'),sourcesInline=document.getElementById('sourcesInline'),sourcesList=document.getElementById('sourcesList'),statusText=document.getElementById('statusText'),topQuery=document.getElementById('topQuery'),toast=document.getElementById('toast');
+    marked.setOptions({breaks:true,gfm:true});
+    function escapeHtml(text=''){return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+    function closeSidebar(){sidebar.classList.remove('open');overlay.classList.remove('open');} function openSidebar(){sidebar.classList.add('open');overlay.classList.add('open');}
+    function saveSessions(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state.sessions));} function loadSessions(){try{state.sessions=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch{state.sessions=[]}}
+    function createSession(query=''){const id=crypto.randomUUID();const title=query?query.slice(0,42):'New research';const session={id,title,query,history:[],answer:'',sources:[],meta:{codeMode:false}};state.sessions.unshift(session);state.activeSessionId=id;saveSessions();renderHistory();return session}
+    function getActiveSession(){return state.sessions.find(session=>session.id===state.activeSessionId)||null}
+    function renderHistory(){historyList.innerHTML=state.sessions.map(session=>`<button class="history-item ${session.id===state.activeSessionId?'active':''}" data-id="${session.id}">${escapeHtml(session.title||'New research')}</button>`).join('');historyList.querySelectorAll('.history-item').forEach(button=>button.addEventListener('click',()=>{openSession(button.dataset.id);closeSidebar();}))}
+    function showToast(html){toast.innerHTML=html;toast.classList.add('show');clearTimeout(showToast._t);showToast._t=setTimeout(()=>toast.classList.remove('show'),4000)}
+    async function copyText(text){try{await navigator.clipboard.writeText(text);return true}catch{return false}}
+    function extractCodeBlocks(markdown=''){const blocks=[];const regex=/```([\w#+.-]*)\n([\s\S]*?)```/g;let match;let idx=1;while((match=regex.exec(markdown))){blocks.push({name:`snippet-${idx}.${inferExtension(match[1])}`,language:(match[1]||'').toLowerCase(),content:match[2].trim()});idx+=1}return blocks}
+    function inferExtension(lang=''){const map={js:'js',javascript:'js',ts:'ts',typescript:'ts',py:'py',python:'py',html:'html',css:'css',json:'json',sql:'sql',sh:'sh',bash:'sh',tsx:'tsx',jsx:'jsx'};return map[(lang||'').toLowerCase()]||'txt'}
+    async function shareCurrentCode(){const session=getActiveSession();if(!session)return;const files=extractCodeBlocks(session.answer||'');if(!files.length)return;const btn=document.querySelector('.share-btn');if(btn)btn.disabled=true;try{const res=await fetch('/api/snippet/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({files,query:session.query})});const data=await res.json();if(!res.ok)throw new Error(data.error||'Failed to share');showToast(`Shared! <a class="toast-copy" href="${data.url}" target="_blank">${data.url}</a>`);const link=toast.querySelector('.toast-copy');if(link)link.addEventListener('click',async(e)=>{e.preventDefault();await copyText(data.url);showToast('Link copied.');window.open(data.url,'_blank');},{once:true});}catch(error){showToast(escapeHtml(error.message))}finally{if(btn)btn.disabled=false;}}
+    function renderAnswer(markdown){if(!markdown.trim()){answerBody.innerHTML='<div class="placeholder">Ask a question to begin your research.</div>';return;}let html=marked.parse(markdown);const superscriptDigits={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};html=html.replace(/\[(\d+)\]/g,(_,n)=>`<sup><a href="#source-${n}">${String(n).split('').map(d=>superscriptDigits[d]||d).join('')}</a></sup>`);answerBody.innerHTML=html;const session=getActiveSession();const blocks=extractCodeBlocks(markdown);if(blocks.length){const wrap=document.createElement('div');wrap.className='share-wrap';wrap.innerHTML='<button class="share-btn">◆ Share this code</button>';answerBody.appendChild(wrap);wrap.querySelector('.share-btn').addEventListener('click',shareCurrentCode);} }
+    function renderSources(sources){state.currentSources=sources;if(!sources.length){sourcesInline.hidden=true;sourcesList.innerHTML='';return;}sourcesInline.hidden=false;const superscriptDigits={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};sourcesList.innerHTML=sources.map((source,index)=>{const n=index+1;const sup=String(n).split('').map(d=>superscriptDigits[d]||d).join('');const domain=source.domain||source.displayUrl||'';return `<div id="source-${n}"><span class="footnote-index">${sup}</span> <a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title||'Untitled source')}</a> <span class="domain">— ${escapeHtml(domain)}</span></div>`}).join('')}
+    function setStatus(text){statusText.textContent=text}
+    function showHome(){homeState.style.display='grid';articleView.classList.remove('active');topQuery.textContent='New research';renderAnswer('');renderSources([]);bottomComposer.classList.remove('visible');setStatus('Idle')}
+    function showArticle(session){homeState.style.display='none';articleView.classList.add('active');topQuery.textContent=session.query||session.title||'Research';renderAnswer(session.answer||'');renderSources(session.sources||[]);bottomComposer.classList.add('visible');setStatus(session.answer?'Ready':'Idle')}
+    function openSession(sessionId){state.activeSessionId=sessionId;renderHistory();const session=getActiveSession();if(!session||(!session.query&&!session.answer))showHome();else showArticle(session);saveSessions()}
+    async function runResearch(query){const trimmed=query.trim();if(!trimmed)return;if(state.abortController)state.abortController.abort();state.abortController=new AbortController();let session=getActiveSession();if(!session||session.answer||session.history.length)session=createSession(trimmed);session.query=trimmed;session.title=trimmed.slice(0,42);session.history.push({role:'user',content:trimmed});session.answer='';session.sources=[];session.meta={codeMode:false};state.currentAnswer='';renderHistory();showArticle(session);renderAnswer('');renderSources([]);setStatus('Researching');saveSessions();try{const response=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:trimmed,history:session.history}),signal:state.abortController.signal});if(!response.ok||!response.body){let message='Request failed.';try{const error=await response.json();message=error.error||message}catch{}throw new Error(message)}const reader=response.body.getReader();const decoder=new TextDecoder();let buffer='';let finished=false;while(!finished){const {value,done}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});const events=buffer.split('\n\n');buffer=events.pop()||'';for(const rawEvent of events){const lines=rawEvent.split('\n').filter(Boolean);let eventName='message';let dataLine='';for(const line of lines){if(line.startsWith('event:'))eventName=line.slice(6).trim();if(line.startsWith('data:'))dataLine+=line.slice(5).trim()}if(!dataLine)continue;const payload=JSON.parse(dataLine);if(eventName==='meta'){session.meta=payload||{codeMode:false};}else if(eventName==='sources'){session.sources=payload.sources||[];renderSources(session.sources);saveSessions()}else if(eventName==='chunk'){state.currentAnswer+=payload.content||'';session.answer=state.currentAnswer;renderAnswer(session.answer);setStatus('Streaming');saveSessions()}else if(eventName==='error'){throw new Error(payload.error||'Streaming error.')}else if(eventName==='done'){finished=true;break}}}session.history.push({role:'assistant',content:session.answer.trim()});setStatus('Complete');saveSessions()}catch(error){if(error.name==='AbortError'){setStatus('Canceled');return}answerBody.innerHTML=`<div class="placeholder">${escapeHtml(error.message||'Something went wrong.')}</div>`;setStatus('Error')}finally{state.abortController=null}}
+    function submitInput(input){const value=input.value.trim();if(!value)return;input.value='';runResearch(value)}
+    [homeInput,followupInput].forEach(input=>input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();submitInput(input)}}));
+    homeSend.addEventListener('click',()=>submitInput(homeInput));followupSend.addEventListener('click',()=>submitInput(followupInput));newChatBtn.addEventListener('click',()=>{state.activeSessionId=null;createSession('');openSession(state.activeSessionId);homeInput.focus();closeSidebar()});menuBtn.addEventListener('click',openSidebar);sidebarClose.addEventListener('click',closeSidebar);overlay.addEventListener('click',closeSidebar);document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',()=>{homeInput.value=chip.dataset.query||'';submitInput(homeInput)}));
+    loadSessions();if(state.sessions.length){state.activeSessionId=state.sessions[0].id;openSession(state.activeSessionId)}else{showHome();renderHistory()}
   </script>
 </body>
 </html>
