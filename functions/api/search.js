@@ -101,32 +101,28 @@ Presentation rules:
 - avoid loud sectioning unless the user asked for it
 - make the response feel like a natural assistant reply that includes excellent code, not a blog post about code`;
 
-const BUILDER_REVIEW_PROMPT = `You are Builder, the first review agent inside Mentrophi.
+const BUILDER_REVIEW_PROMPT = `You are Builder inside Mentrophi's Two-Agent Debate.
 
-Your job is to propose the main direction, draft the first-pass solution, and surface the most promising approach.
+Your job is to propose the best current direction, respond to criticism, and improve the approach over multiple rounds.
 
-You must NOT reveal chain-of-thought. Return only short, productized summaries in JSON.
+Do not reveal chain-of-thought. Return only a short visible debate turn in JSON.
 
 Respond with JSON using exactly this shape:
 {
-  "status": "done",
-  "headline": "short builder headline",
-  "summary": "1-2 sentence summary of the main direction",
-  "focus": ["short point", "short point", "short point"]
+  "text": "1-2 sentence builder turn written like a visible debate message",
+  "state": "continue" | "converged"
 }`;
 
-const CRITIC_REVIEW_PROMPT = `You are Critic, the second review agent inside Mentrophi.
+const CRITIC_REVIEW_PROMPT = `You are Critic inside Mentrophi's Two-Agent Debate.
 
-Your job is to pressure-test Builder's direction, challenge assumptions, identify flaws, risks, edge cases, and possible improvements.
+Your job is to challenge Builder's direction, identify flaws, missing edge cases, tradeoffs, and better alternatives over multiple rounds.
 
-You must NOT reveal chain-of-thought. Return only short, productized summaries in JSON.
+Do not reveal chain-of-thought. Return only a short visible debate turn in JSON.
 
 Respond with JSON using exactly this shape:
 {
-  "status": "done",
-  "headline": "short critic headline",
-  "summary": "1-2 sentence summary of the critique",
-  "focus": ["short point", "short point", "short point"]
+  "text": "1-2 sentence critic turn written like a visible debate message",
+  "state": "continue" | "converged"
 }`;
 
 const DEFAULT_AI_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -482,42 +478,54 @@ async function fetchJsonCompletion(aiConfig, messages, temperature = 0.2) {
   return typeof text === 'string' ? text : Array.isArray(text) ? text.map((part) => part?.text || '').join('') : '';
 }
 
-function parseReviewJson(text, fallbackHeadline) {
+function parseReviewJson(text, fallbackText) {
   try {
     const parsed = JSON.parse(text);
     return {
-      status: 'done',
-      headline: parsed.headline || fallbackHeadline,
-      summary: parsed.summary || '',
-      focus: Array.isArray(parsed.focus) ? parsed.focus.slice(0, 3) : [],
+      text: parsed.text || parsed.message || fallbackText,
+      state: parsed.state === 'converged' ? 'converged' : 'continue',
     };
   } catch {
     return {
-      status: 'done',
-      headline: fallbackHeadline,
-      summary: text.trim().slice(0, 240),
-      focus: [],
+      text: text.trim().slice(0, 240) || fallbackText,
+      state: 'continue',
     };
   }
 }
 
 async function runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode) {
   const baseMessages = formatHistory(history, query, sources, codeMode, researchMode);
-  const builderText = await fetchJsonCompletion(aiConfig, [
-    { role: 'system', content: BUILDER_REVIEW_PROMPT },
-    ...baseMessages,
-    { role: 'user', content: `User query: ${query}\n\nGive the best first-pass direction.` },
-  ], 0.15);
-  const builder = parseReviewJson(builderText, 'Builder proposed a first approach');
+  const timeline = [];
+  let builderContext = 'Give the best first-pass direction.';
+  let criticContext = '';
+  const maxRounds = 4;
 
-  const criticText = await fetchJsonCompletion(aiConfig, [
-    { role: 'system', content: CRITIC_REVIEW_PROMPT },
-    ...baseMessages,
-    { role: 'user', content: `User query: ${query}\n\nBuilder summary:\nHeadline: ${builder.headline}\nSummary: ${builder.summary}\nFocus: ${(builder.focus || []).join(' | ')}\n\nNow critique it, stress-test it, and suggest corrections.` },
-  ], 0.1);
-  const critic = parseReviewJson(criticText, 'Critic pressure-tested the approach');
+  for (let round = 1; round <= maxRounds; round += 1) {
+    const builderText = await fetchJsonCompletion(aiConfig, [
+      { role: 'system', content: BUILDER_REVIEW_PROMPT },
+      ...baseMessages,
+      { role: 'user', content: `User query: ${query}\n\nRound ${round}. ${builderContext}${criticContext ? `\n\nLatest critic push:\n${criticContext}` : ''}` },
+    ], 0.15);
+    const builder = parseReviewJson(builderText, round === 1 ? 'Builder proposed a first approach.' : 'Builder refined the approach.');
+    timeline.push({ round, agent: 'Builder', text: builder.text });
+    if (builder.state === 'converged' && round > 1) break;
 
-  return { builder, critic };
+    const criticText = await fetchJsonCompletion(aiConfig, [
+      { role: 'system', content: CRITIC_REVIEW_PROMPT },
+      ...baseMessages,
+      { role: 'user', content: `User query: ${query}\n\nRound ${round}. Builder turn:\n${builder.text}\n\nNow critique it, pressure-test it, and say whether major issues remain.` },
+    ], 0.1);
+    const critic = parseReviewJson(criticText, 'Critic pressure-tested the approach.');
+    timeline.push({ round, agent: 'Critic', text: critic.text });
+
+    criticContext = critic.text;
+    builderContext = 'Refine the approach in response to the critique.';
+    if (critic.state === 'converged') break;
+  }
+
+  const builderFinal = [...timeline].reverse().find((item) => item.agent === 'Builder')?.text || '';
+  const criticFinal = [...timeline].reverse().find((item) => item.agent === 'Critic')?.text || '';
+  return { timeline, builderFinal, criticFinal };
 }
 
 function shouldUseTwoAgentReview(query, explicitFlag) {
@@ -564,7 +572,7 @@ export async function onRequest(context) {
     if (review) {
       finalMessages.push({
         role: 'user',
-        content: `Builder summary:\n${review.builder.headline}\n${review.builder.summary}\n${review.builder.focus.join(' | ')}\n\nCritic summary:\n${review.critic.headline}\n${review.critic.summary}\n${review.critic.focus.join(' | ')}\n\nNow produce one polished final answer in Mentrophi's normal chat voice. Do not mention Builder or Critic unless the user asks.`,
+        content: `Two-Agent Debate final state:\nBuilder: ${review.builderFinal || ''}\n\nCritic: ${review.criticFinal || ''}\n\nNow produce one polished final answer in Mentrophi's normal chat voice. Do not mention Builder or Critic unless the user asks.`,
       });
     }
 
@@ -594,16 +602,13 @@ export async function onRequest(context) {
           controller.enqueue(encoder.encode(sseData('sources', { sources })));
         }
         if (review) {
-          controller.enqueue(encoder.encode(sseData('review', {
-            stage: 'builder',
-            agent: 'Builder',
-            payload: review.builder,
-          })));
-          controller.enqueue(encoder.encode(sseData('review', {
-            stage: 'critic',
-            agent: 'Critic',
-            payload: review.critic,
-          })));
+          for (const item of review.timeline) {
+            controller.enqueue(encoder.encode(sseData('review', {
+              round: item.round,
+              agent: item.agent,
+              text: item.text,
+            })));
+          }
         }
         const reader = aiResponse.body.getReader();
         let buffer = '';
