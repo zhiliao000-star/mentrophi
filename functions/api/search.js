@@ -393,6 +393,40 @@ async function collectSources(query) {
   }));
 }
 
+function shouldSkipExternalSearch(query = '') {
+  const trimmed = query.trim();
+  if (!trimmed) return true;
+  if (isGreetingQuery(trimmed)) return true;
+  if (isShortChatQuery(trimmed) && trimmed.length < 40) return true;
+  return false;
+}
+
+async function collectSourcesSmart(query) {
+  if (shouldSkipExternalSearch(query)) return { sources: [], searched: false, passCount: 0 };
+
+  const primary = await collectSources(query);
+  const highConfidence = primary.length >= 4
+    || primary.some((source) => /minutes? ago|hours? ago|today|this week|official|docs|documentation|release notes/i.test(`${source.title || ''} ${source.snippet || ''}`));
+
+  if (highConfidence) return { sources: primary, searched: true, passCount: 1 };
+
+  const { ymd } = getCurrentDateContext();
+  const followupQuery = looksLikeCurrentQuery(query) || looksLikeCurrentEntityQuery(query)
+    ? `${normalizeEntityQuery(query)} latest ${ymd}`
+    : `${query} official latest ${ymd}`;
+  const secondary = await collectSources(followupQuery);
+
+  const merged = [];
+  const seen = new Set();
+  for (const source of [...primary, ...secondary]) {
+    if (seen.has(source.url)) continue;
+    seen.add(source.url);
+    merged.push(source);
+  }
+
+  return { sources: merged, searched: true, passCount: 2 };
+}
+
 function firstNonEmpty(...values) {
   for (const value of values) {
     if (typeof value === 'string' && value.trim()) return value.trim();
@@ -588,7 +622,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const { query, history, twoAgentReview, forceSearch } = await request.json();
+    const { query, history, twoAgentReview } = await request.json();
     if (!query || typeof query !== 'string') {
       return new Response(JSON.stringify({ error: 'Query is required' }), {
         status: 400,
@@ -605,7 +639,11 @@ export async function onRequest(context) {
     }
 
     const codeMode = isCodeQuery(query);
-    const researchMode = forceSearch === true ? true : clearlyNeedsResearch(query);
+    const smartSearch = codeMode
+      ? { sources: await collectSources(`${query} latest stable official docs`), searched: true, passCount: 1 }
+      : await collectSourcesSmart(query);
+    const sources = smartSearch.sources;
+    const researchMode = codeMode || smartSearch.searched;
     const reviewRequested = shouldUseTwoAgentReview(query, twoAgentReview);
     const reviewEligible = codeMode || /(compare|comparison|tradeoff|architecture|plan|design|strategy|approach|complex|tricky)/i.test(query);
     const reviewMode = twoAgentReview === true ? true : (reviewRequested && reviewEligible);
@@ -616,10 +654,9 @@ export async function onRequest(context) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          controller.enqueue(encoder.encode(sseData('meta', { codeMode, researchMode, reviewMode, model: aiConfig.model, provider: aiConfig.baseUrl })));
+          controller.enqueue(encoder.encode(sseData('meta', { codeMode, researchMode, reviewMode, model: aiConfig.model, provider: aiConfig.baseUrl, searchPasses: smartSearch.passCount })));
 
-          const sources = researchMode || codeMode ? await collectSources(query) : [];
-          if (researchMode || codeMode) {
+          if (sources.length) {
             controller.enqueue(encoder.encode(sseData('sources', { sources })));
           }
 
