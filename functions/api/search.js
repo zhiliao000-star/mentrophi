@@ -565,7 +565,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const { query, history, twoAgentReview } = await request.json();
+    const { query, history, twoAgentReview, forceSearch } = await request.json();
     if (!query || typeof query !== 'string') {
       return new Response(JSON.stringify({ error: 'Query is required' }), {
         status: 400,
@@ -582,7 +582,7 @@ export async function onRequest(context) {
     }
 
     const codeMode = isCodeQuery(query);
-    const researchMode = clearlyNeedsResearch(query);
+    const researchMode = forceSearch === true ? true : clearlyNeedsResearch(query);
     const sources = researchMode || codeMode ? await collectSources(query) : [];
     const reviewRequested = shouldUseTwoAgentReview(query, twoAgentReview);
     const reviewEligible = codeMode || /(compare|comparison|tradeoff|architecture|plan|design|strategy|approach|complex|tricky)/i.test(query);
