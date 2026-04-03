@@ -103,25 +103,38 @@ Presentation rules:
 
 const BUILDER_REVIEW_PROMPT = `You are Builder inside Mentrophi's Two-Agent Debate.
 
-Your job is to propose the best current direction, respond to criticism, and improve the approach over multiple rounds.
+Your job is to propose the best response direction for the user's CURRENT message, respond to criticism, and improve the approach over multiple rounds.
 
-Do not reveal chain-of-thought. Return only a short visible debate turn in JSON.
+Strict rules:
+- stay tightly anchored to the user's current message
+- do not invent a different topic, scenario, or problem
+- if the current message is short or ambiguous, discuss the best interpretation and best response shape for that exact message
+- make each turn concrete, useful, and forward-moving
+- do not ask broad reset questions unless the user explicitly asked for clarification
+- do not reveal chain-of-thought
+- visible turns should be short, high-signal, and product-ready
 
 Respond with JSON using exactly this shape:
 {
-  "text": "1-2 sentence builder turn written like a visible debate message",
+  "text": "1-2 sentence builder turn written like a visible debate message about the user's current message",
   "state": "continue" | "converged"
 }`;
 
 const CRITIC_REVIEW_PROMPT = `You are Critic inside Mentrophi's Two-Agent Debate.
 
-Your job is to challenge Builder's direction, identify flaws, missing edge cases, tradeoffs, and better alternatives over multiple rounds.
+Your job is to challenge Builder's response direction for the user's CURRENT message, identify weak interpretations, vagueness, misreads, missing edge cases, and better alternatives over multiple rounds.
 
-Do not reveal chain-of-thought. Return only a short visible debate turn in JSON.
+Strict rules:
+- stay tightly anchored to the user's current message
+- do not invent a different topic, scenario, or problem
+- if the current message is short or ambiguous, critique whether Builder interpreted it well and whether the proposed response would feel useful
+- push for specificity, fidelity to the user's wording, and real practical value
+- do not reveal chain-of-thought
+- visible turns should be short, high-signal, and product-ready
 
 Respond with JSON using exactly this shape:
 {
-  "text": "1-2 sentence critic turn written like a visible debate message",
+  "text": "1-2 sentence critic turn written like a visible debate message about the user's current message",
   "state": "continue" | "converged"
 }`;
 
@@ -495,8 +508,13 @@ function parseReviewJson(text, fallbackText) {
 
 async function runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode) {
   const baseMessages = formatHistory(history, query, sources, codeMode, researchMode);
+  const recentHistory = (Array.isArray(history) ? history : []).slice(-4).map((item) => `${item.role}: ${item.content}`).join('\n');
+  const shortOrAmbiguous = query.trim().length < 24 || isGreetingQuery(query) || /^(ok|okay|sure|yes|no|maybe|thanks|thank you|hi|hello|hey)\b/i.test(query.trim());
+  const debateModeNote = shortOrAmbiguous
+    ? 'The current message is short or ambiguous. Debate the best interpretation and the best helpful response for this exact message. Do not invent a different topic.'
+    : 'Debate the best response direction for this exact message. Stay specific and faithful to what the user actually asked.';
   const timeline = [];
-  let builderContext = 'Give the best first-pass direction.';
+  let builderContext = 'Propose the best first-pass response direction.';
   let criticContext = '';
   const maxRounds = 4;
 
@@ -504,22 +522,22 @@ async function runTwoAgentReview(aiConfig, query, history, sources, codeMode, re
     const builderText = await fetchJsonCompletion(aiConfig, [
       { role: 'system', content: BUILDER_REVIEW_PROMPT },
       ...baseMessages,
-      { role: 'user', content: `User query: ${query}\n\nRound ${round}. ${builderContext}${criticContext ? `\n\nLatest critic push:\n${criticContext}` : ''}` },
+      { role: 'user', content: `Current user message:\n${query}\n\nRecent conversation (for context only):\n${recentHistory || 'None'}\n\n${debateModeNote}\n\nRound ${round}. ${builderContext}${criticContext ? `\n\nLatest critic push:\n${criticContext}` : ''}` },
     ], 0.15);
-    const builder = parseReviewJson(builderText, round === 1 ? 'Builder proposed a first approach.' : 'Builder refined the approach.');
+    const builder = parseReviewJson(builderText, shortOrAmbiguous ? 'Builder proposed a grounded interpretation and reply shape.' : 'Builder proposed a strong first-pass direction.');
     timeline.push({ round, agent: 'Builder', text: builder.text });
     if (builder.state === 'converged' && round > 1) break;
 
     const criticText = await fetchJsonCompletion(aiConfig, [
       { role: 'system', content: CRITIC_REVIEW_PROMPT },
       ...baseMessages,
-      { role: 'user', content: `User query: ${query}\n\nRound ${round}. Builder turn:\n${builder.text}\n\nNow critique it, pressure-test it, and say whether major issues remain.` },
+      { role: 'user', content: `Current user message:\n${query}\n\nRecent conversation (for context only):\n${recentHistory || 'None'}\n\n${debateModeNote}\n\nRound ${round}. Builder turn:\n${builder.text}\n\nCritique whether Builder stayed faithful to the current message, whether the interpretation is strong, and whether the proposed response would actually help.` },
     ], 0.1);
-    const critic = parseReviewJson(criticText, 'Critic pressure-tested the approach.');
+    const critic = parseReviewJson(criticText, 'Critic pressure-tested the proposed response direction.');
     timeline.push({ round, agent: 'Critic', text: critic.text });
 
     criticContext = critic.text;
-    builderContext = 'Refine the approach in response to the critique.';
+    builderContext = 'Refine the response direction in direct response to the critique, staying tightly anchored to the current message.';
     if (critic.state === 'converged') break;
   }
 
