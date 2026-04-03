@@ -506,6 +506,25 @@ function parseReviewJson(text, fallbackText) {
   }
 }
 
+function extractStreamText(parsed) {
+  const delta = parsed?.choices?.[0]?.delta;
+  const content = delta?.content;
+
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content.map((part) => {
+      if (typeof part === 'string') return part;
+      if (typeof part?.text === 'string') return part.text;
+      return '';
+    }).join('');
+  }
+
+  if (typeof delta?.text === 'string') return delta.text;
+  if (typeof parsed?.choices?.[0]?.message?.content === 'string') return parsed.choices[0].message.content;
+
+  return '';
+}
+
 async function runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode, onTurn) {
   const baseMessages = formatHistory(history, query, sources, codeMode, researchMode);
   const recentHistory = (Array.isArray(history) ? history : []).slice(-4).map((item) => `${item.role}: ${item.content}`).join('\n');
@@ -661,8 +680,8 @@ export async function onRequest(context) {
 
               try {
                 const parsed = JSON.parse(payload);
-                const delta = parsed.choices?.[0]?.delta?.content;
-                if (delta) controller.enqueue(encoder.encode(sseData('chunk', { content: delta })));
+                const deltaText = extractStreamText(parsed);
+                if (deltaText) controller.enqueue(encoder.encode(sseData('chunk', { content: deltaText })));
               } catch {
                 controller.enqueue(encoder.encode(sseData('error', { error: 'Failed to parse AI stream chunk.' })));
               }
