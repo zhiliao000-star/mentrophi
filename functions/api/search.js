@@ -506,7 +506,7 @@ function parseReviewJson(text, fallbackText) {
   }
 }
 
-async function runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode) {
+async function runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode, onTurn) {
   const baseMessages = formatHistory(history, query, sources, codeMode, researchMode);
   const recentHistory = (Array.isArray(history) ? history : []).slice(-4).map((item) => `${item.role}: ${item.content}`).join('\n');
   const shortOrAmbiguous = query.trim().length < 24 || isGreetingQuery(query) || /^(ok|okay|sure|yes|no|maybe|thanks|thank you|hi|hello|hey)\b/i.test(query.trim());
@@ -525,7 +525,9 @@ async function runTwoAgentReview(aiConfig, query, history, sources, codeMode, re
       { role: 'user', content: `Current user message:\n${query}\n\nRecent conversation (for context only):\n${recentHistory || 'None'}\n\n${debateModeNote}\n\nRound ${round}. ${builderContext}${criticContext ? `\n\nLatest critic push:\n${criticContext}` : ''}` },
     ], 0.15);
     const builder = parseReviewJson(builderText, shortOrAmbiguous ? 'Builder proposed a grounded interpretation and reply shape.' : 'Builder proposed a strong first-pass direction.');
-    timeline.push({ round, agent: 'Builder', text: builder.text });
+    const builderTurn = { round, agent: 'Builder', text: builder.text };
+    timeline.push(builderTurn);
+    if (onTurn) await onTurn(builderTurn);
     if (builder.state === 'converged' && round > 1) break;
 
     const criticText = await fetchJsonCompletion(aiConfig, [
@@ -534,7 +536,9 @@ async function runTwoAgentReview(aiConfig, query, history, sources, codeMode, re
       { role: 'user', content: `Current user message:\n${query}\n\nRecent conversation (for context only):\n${recentHistory || 'None'}\n\n${debateModeNote}\n\nRound ${round}. Builder turn:\n${builder.text}\n\nCritique whether Builder stayed faithful to the current message, whether the interpretation is strong, and whether the proposed response would actually help.` },
     ], 0.1);
     const critic = parseReviewJson(criticText, 'Critic pressure-tested the proposed response direction.');
-    timeline.push({ round, agent: 'Critic', text: critic.text });
+    const criticTurn = { round, agent: 'Critic', text: critic.text };
+    timeline.push(criticTurn);
+    if (onTurn) await onTurn(criticTurn);
 
     criticContext = critic.text;
     builderContext = 'Refine the response direction in direct response to the critique, staying tightly anchored to the current message.';
@@ -583,34 +587,9 @@ export async function onRequest(context) {
 
     const codeMode = isCodeQuery(query);
     const researchMode = forceSearch === true ? true : clearlyNeedsResearch(query);
-    const sources = researchMode || codeMode ? await collectSources(query) : [];
     const reviewRequested = shouldUseTwoAgentReview(query, twoAgentReview);
     const reviewEligible = codeMode || /(compare|comparison|tradeoff|architecture|plan|design|strategy|approach|complex|tricky)/i.test(query);
     const reviewMode = twoAgentReview === true ? true : (reviewRequested && reviewEligible);
-    const review = reviewMode ? await runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode) : null;
-    const finalMessages = formatHistory(history, query, sources, codeMode, researchMode);
-    if (review) {
-      finalMessages.push({
-        role: 'user',
-        content: `Two-Agent Debate final state:\nBuilder: ${review.builderFinal || ''}\n\nCritic: ${review.criticFinal || ''}\n\nNow produce one polished final answer in Mentrophi's normal chat voice. Do not mention Builder or Critic unless the user asks.`,
-      });
-    }
-
-    const aiResponse = await fetch(aiConfig.baseUrl, {
-      method: 'POST',
-      headers: buildHeaders(aiConfig),
-      body: JSON.stringify({
-        model: aiConfig.model,
-        stream: true,
-        temperature: codeMode ? 0.12 : 0.22,
-        messages: finalMessages,
-      }),
-    });
-
-    if (!aiResponse.ok || !aiResponse.body) {
-      const errorText = await aiResponse.text();
-      throw new Error(`AI provider failed (${aiConfig.model} @ ${aiConfig.baseUrl}): ${aiResponse.status} ${errorText}`);
-    }
 
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
@@ -618,18 +597,46 @@ export async function onRequest(context) {
     const stream = new ReadableStream({
       async start(controller) {
         controller.enqueue(encoder.encode(sseData('meta', { codeMode, researchMode, reviewMode, model: aiConfig.model, provider: aiConfig.baseUrl })));
+
+        const sources = researchMode || codeMode ? await collectSources(query) : [];
         if (researchMode || codeMode) {
           controller.enqueue(encoder.encode(sseData('sources', { sources })));
         }
+
+        const review = reviewMode
+          ? await runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode, async (item) => {
+              controller.enqueue(encoder.encode(sseData('review', {
+                round: item.round,
+                agent: item.agent,
+                text: item.text,
+              })));
+            })
+          : null;
+
+        const finalMessages = formatHistory(history, query, sources, codeMode, researchMode);
         if (review) {
-          for (const item of review.timeline) {
-            controller.enqueue(encoder.encode(sseData('review', {
-              round: item.round,
-              agent: item.agent,
-              text: item.text,
-            })));
-          }
+          finalMessages.push({
+            role: 'user',
+            content: `Two-Agent Debate final state:\nBuilder: ${review.builderFinal || ''}\n\nCritic: ${review.criticFinal || ''}\n\nNow produce one polished final answer in Mentrophi's normal chat voice. Do not mention Builder or Critic unless the user asks.`,
+          });
         }
+
+        const aiResponse = await fetch(aiConfig.baseUrl, {
+          method: 'POST',
+          headers: buildHeaders(aiConfig),
+          body: JSON.stringify({
+            model: aiConfig.model,
+            stream: true,
+            temperature: codeMode ? 0.12 : 0.22,
+            messages: finalMessages,
+          }),
+        });
+
+        if (!aiResponse.ok || !aiResponse.body) {
+          const errorText = await aiResponse.text();
+          throw new Error(`AI provider failed (${aiConfig.model} @ ${aiConfig.baseUrl}): ${aiResponse.status} ${errorText}`);
+        }
+
         const reader = aiResponse.body.getReader();
         let buffer = '';
 
