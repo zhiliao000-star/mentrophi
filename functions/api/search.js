@@ -101,6 +101,34 @@ Presentation rules:
 - avoid loud sectioning unless the user asked for it
 - make the response feel like a natural assistant reply that includes excellent code, not a blog post about code`;
 
+const BUILDER_REVIEW_PROMPT = `You are Builder, the first review agent inside Mentrophi.
+
+Your job is to propose the main direction, draft the first-pass solution, and surface the most promising approach.
+
+You must NOT reveal chain-of-thought. Return only short, productized summaries in JSON.
+
+Respond with JSON using exactly this shape:
+{
+  "status": "done",
+  "headline": "short builder headline",
+  "summary": "1-2 sentence summary of the main direction",
+  "focus": ["short point", "short point", "short point"]
+}`;
+
+const CRITIC_REVIEW_PROMPT = `You are Critic, the second review agent inside Mentrophi.
+
+Your job is to pressure-test Builder's direction, challenge assumptions, identify flaws, risks, edge cases, and possible improvements.
+
+You must NOT reveal chain-of-thought. Return only short, productized summaries in JSON.
+
+Respond with JSON using exactly this shape:
+{
+  "status": "done",
+  "headline": "short critic headline",
+  "summary": "1-2 sentence summary of the critique",
+  "focus": ["short point", "short point", "short point"]
+}`;
+
 const DEFAULT_AI_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_AI_MODEL = 'openai/gpt-4.1-mini';
 const USER_AGENT = 'Mozilla/5.0';
@@ -432,6 +460,72 @@ function sseData(event, data) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
+async function fetchJsonCompletion(aiConfig, messages, temperature = 0.2) {
+  const response = await fetch(aiConfig.baseUrl, {
+    method: 'POST',
+    headers: buildHeaders(aiConfig),
+    body: JSON.stringify({
+      model: aiConfig.model,
+      stream: false,
+      temperature,
+      messages,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`AI provider failed (${aiConfig.model} @ ${aiConfig.baseUrl}): ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content || '';
+  return typeof text === 'string' ? text : Array.isArray(text) ? text.map((part) => part?.text || '').join('') : '';
+}
+
+function parseReviewJson(text, fallbackHeadline) {
+  try {
+    const parsed = JSON.parse(text);
+    return {
+      status: 'done',
+      headline: parsed.headline || fallbackHeadline,
+      summary: parsed.summary || '',
+      focus: Array.isArray(parsed.focus) ? parsed.focus.slice(0, 3) : [],
+    };
+  } catch {
+    return {
+      status: 'done',
+      headline: fallbackHeadline,
+      summary: text.trim().slice(0, 240),
+      focus: [],
+    };
+  }
+}
+
+async function runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode) {
+  const baseMessages = formatHistory(history, query, sources, codeMode, researchMode);
+  const builderText = await fetchJsonCompletion(aiConfig, [
+    { role: 'system', content: BUILDER_REVIEW_PROMPT },
+    ...baseMessages,
+    { role: 'user', content: `User query: ${query}\n\nGive the best first-pass direction.` },
+  ], 0.15);
+  const builder = parseReviewJson(builderText, 'Builder proposed a first approach');
+
+  const criticText = await fetchJsonCompletion(aiConfig, [
+    { role: 'system', content: CRITIC_REVIEW_PROMPT },
+    ...baseMessages,
+    { role: 'user', content: `User query: ${query}\n\nBuilder summary:\nHeadline: ${builder.headline}\nSummary: ${builder.summary}\nFocus: ${(builder.focus || []).join(' | ')}\n\nNow critique it, stress-test it, and suggest corrections.` },
+  ], 0.1);
+  const critic = parseReviewJson(criticText, 'Critic pressure-tested the approach');
+
+  return { builder, critic };
+}
+
+function shouldUseTwoAgentReview(query, explicitFlag) {
+  if (explicitFlag === true) return true;
+  if (explicitFlag === false) return false;
+  return /(compare|comparison|tradeoff|architecture|architect|design this|plan this|strategy|approach|pros and cons|which should|refactor|debug|build|implement|complex|hard|tricky)/i.test(query);
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -445,7 +539,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const { query, history } = await request.json();
+    const { query, history, twoAgentReview } = await request.json();
     if (!query || typeof query !== 'string') {
       return new Response(JSON.stringify({ error: 'Query is required' }), {
         status: 400,
@@ -464,6 +558,15 @@ export async function onRequest(context) {
     const codeMode = isCodeQuery(query);
     const researchMode = clearlyNeedsResearch(query);
     const sources = researchMode || codeMode ? await collectSources(query) : [];
+    const reviewMode = shouldUseTwoAgentReview(query, twoAgentReview) && (codeMode || /(compare|comparison|tradeoff|architecture|plan|design|strategy|approach|complex|tricky)/i.test(query));
+    const review = reviewMode ? await runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode) : null;
+    const finalMessages = formatHistory(history, query, sources, codeMode, researchMode);
+    if (review) {
+      finalMessages.push({
+        role: 'user',
+        content: `Builder summary:\n${review.builder.headline}\n${review.builder.summary}\n${review.builder.focus.join(' | ')}\n\nCritic summary:\n${review.critic.headline}\n${review.critic.summary}\n${review.critic.focus.join(' | ')}\n\nNow produce one polished final answer in Mentrophi's normal chat voice. Do not mention Builder or Critic unless the user asks.`,
+      });
+    }
 
     const aiResponse = await fetch(aiConfig.baseUrl, {
       method: 'POST',
@@ -472,7 +575,7 @@ export async function onRequest(context) {
         model: aiConfig.model,
         stream: true,
         temperature: codeMode ? 0.12 : 0.22,
-        messages: formatHistory(history, query, sources, codeMode, researchMode),
+        messages: finalMessages,
       }),
     });
 
@@ -486,9 +589,21 @@ export async function onRequest(context) {
 
     const stream = new ReadableStream({
       async start(controller) {
-        controller.enqueue(encoder.encode(sseData('meta', { codeMode, researchMode, model: aiConfig.model, provider: aiConfig.baseUrl })));
+        controller.enqueue(encoder.encode(sseData('meta', { codeMode, researchMode, reviewMode, model: aiConfig.model, provider: aiConfig.baseUrl })));
         if (researchMode || codeMode) {
           controller.enqueue(encoder.encode(sseData('sources', { sources })));
+        }
+        if (review) {
+          controller.enqueue(encoder.encode(sseData('review', {
+            stage: 'builder',
+            agent: 'Builder',
+            payload: review.builder,
+          })));
+          controller.enqueue(encoder.encode(sseData('review', {
+            stage: 'critic',
+            agent: 'Critic',
+            payload: review.critic,
+          })));
         }
         const reader = aiResponse.body.getReader();
         let buffer = '';
