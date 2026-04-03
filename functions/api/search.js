@@ -566,7 +566,9 @@ export async function onRequest(context) {
     const codeMode = isCodeQuery(query);
     const researchMode = clearlyNeedsResearch(query);
     const sources = researchMode || codeMode ? await collectSources(query) : [];
-    const reviewMode = shouldUseTwoAgentReview(query, twoAgentReview) && (codeMode || /(compare|comparison|tradeoff|architecture|plan|design|strategy|approach|complex|tricky)/i.test(query));
+    const reviewRequested = shouldUseTwoAgentReview(query, twoAgentReview);
+    const reviewEligible = codeMode || /(compare|comparison|tradeoff|architecture|plan|design|strategy|approach|complex|tricky)/i.test(query);
+    const reviewMode = twoAgentReview === true ? true : (reviewRequested && reviewEligible);
     const review = reviewMode ? await runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode) : null;
     const finalMessages = formatHistory(history, query, sources, codeMode, researchMode);
     if (review) {
