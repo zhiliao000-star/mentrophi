@@ -615,51 +615,51 @@ export async function onRequest(context) {
 
     const stream = new ReadableStream({
       async start(controller) {
-        controller.enqueue(encoder.encode(sseData('meta', { codeMode, researchMode, reviewMode, model: aiConfig.model, provider: aiConfig.baseUrl })));
-
-        const sources = researchMode || codeMode ? await collectSources(query) : [];
-        if (researchMode || codeMode) {
-          controller.enqueue(encoder.encode(sseData('sources', { sources })));
-        }
-
-        const review = reviewMode
-          ? await runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode, async (item) => {
-              controller.enqueue(encoder.encode(sseData('review', {
-                round: item.round,
-                agent: item.agent,
-                text: item.text,
-              })));
-            })
-          : null;
-
-        const finalMessages = formatHistory(history, query, sources, codeMode, researchMode);
-        if (review) {
-          finalMessages.push({
-            role: 'user',
-            content: `Two-Agent Debate final state:\nBuilder: ${review.builderFinal || ''}\n\nCritic: ${review.criticFinal || ''}\n\nNow produce one polished final answer in Mentrophi's normal chat voice. Do not mention Builder or Critic unless the user asks.`,
-          });
-        }
-
-        const aiResponse = await fetch(aiConfig.baseUrl, {
-          method: 'POST',
-          headers: buildHeaders(aiConfig),
-          body: JSON.stringify({
-            model: aiConfig.model,
-            stream: true,
-            temperature: codeMode ? 0.12 : 0.22,
-            messages: finalMessages,
-          }),
-        });
-
-        if (!aiResponse.ok || !aiResponse.body) {
-          const errorText = await aiResponse.text();
-          throw new Error(`AI provider failed (${aiConfig.model} @ ${aiConfig.baseUrl}): ${aiResponse.status} ${errorText}`);
-        }
-
-        const reader = aiResponse.body.getReader();
-        let buffer = '';
-
         try {
+          controller.enqueue(encoder.encode(sseData('meta', { codeMode, researchMode, reviewMode, model: aiConfig.model, provider: aiConfig.baseUrl })));
+
+          const sources = researchMode || codeMode ? await collectSources(query) : [];
+          if (researchMode || codeMode) {
+            controller.enqueue(encoder.encode(sseData('sources', { sources })));
+          }
+
+          const review = reviewMode
+            ? await runTwoAgentReview(aiConfig, query, history, sources, codeMode, researchMode, async (item) => {
+                controller.enqueue(encoder.encode(sseData('review', {
+                  round: item.round,
+                  agent: item.agent,
+                  text: item.text,
+                })));
+              })
+            : null;
+
+          const finalMessages = formatHistory(history, query, sources, codeMode, researchMode);
+          if (review) {
+            finalMessages.push({
+              role: 'user',
+              content: `Two-Agent Debate final state:\nBuilder: ${review.builderFinal || ''}\n\nCritic: ${review.criticFinal || ''}\n\nNow produce one polished final answer in Mentrophi's normal chat voice. Do not mention Builder or Critic unless the user asks.`,
+            });
+          }
+
+          const aiResponse = await fetch(aiConfig.baseUrl, {
+            method: 'POST',
+            headers: buildHeaders(aiConfig),
+            body: JSON.stringify({
+              model: aiConfig.model,
+              stream: true,
+              temperature: codeMode ? 0.12 : 0.22,
+              messages: finalMessages,
+            }),
+          });
+
+          if (!aiResponse.ok || !aiResponse.body) {
+            const errorText = await aiResponse.text();
+            throw new Error(`AI provider failed (${aiConfig.model} @ ${aiConfig.baseUrl}): ${aiResponse.status} ${errorText}`);
+          }
+
+          const reader = aiResponse.body.getReader();
+          let buffer = '';
+
           while (true) {
             const { value, done } = await reader.read();
             if (done) break;
@@ -684,6 +684,8 @@ export async function onRequest(context) {
                 if (deltaText) controller.enqueue(encoder.encode(sseData('chunk', { content: deltaText })));
               } catch {
                 controller.enqueue(encoder.encode(sseData('error', { error: 'Failed to parse AI stream chunk.' })));
+                controller.close();
+                return;
               }
             }
           }
