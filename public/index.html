@@ -138,15 +138,15 @@
     .article-shell{max-width:1020px;margin:0 auto;width:100%}
     .thread-shell{max-width:860px;margin:0 auto;width:100%}
 
-    .home-state{min-height:calc(100dvh - 58px - 18px);display:grid;place-items:center;padding:0}
-    .home-shell{width:min(100%,760px);display:grid;gap:14px;justify-items:center;text-align:center;animation:riseIn .6s ease both}
+    .home-state{min-height:calc(100svh - 58px);display:grid;place-items:center;padding:0}
+    .home-shell{width:min(100%,720px);display:grid;gap:12px;justify-items:center;text-align:center;animation:riseIn .6s ease both}
     .home-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-size:12px;color:var(--muted);font-weight:600}
     .home-badge::before{content:'SYSTEM';color:var(--accent);font-size:11px}
     .hero-title{font-size:clamp(32px,4.6vw,56px);font-weight:700;letter-spacing:-0.055em;line-height:.98;max-width:11ch;margin:0}
     .hero-subtitle{margin:0;max-width:680px;color:var(--muted);font-size:14px;line-height:1.7}
     .hero-mark{display:none}
-    .home-composer-wrap{width:100%;display:grid;gap:12px}
-    .home-footnote{margin:2px 0 0;color:var(--muted-2);font-size:12px}
+    .home-composer-wrap{width:100%;display:grid;gap:10px}
+    .home-footnote{margin:0;color:var(--muted-2);font-size:11px}
 
     .composer{position:relative;width:100%}
     .composer-shell{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px 14px;border-radius:22px;transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease}
@@ -168,8 +168,8 @@
     .send-btn{width:36px;height:36px;border-radius:18px;background:transparent;border:1px solid rgba(0,122,255,.4);color:var(--accent);display:grid;place-items:center;font-size:14px;line-height:1;flex:none;transition:all .2s ease}
     .send-btn:hover{background:rgba(0,122,255,.14);box-shadow:var(--glow);transform:scale(1.05)}
 
-    .chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;max-width:100%;overflow:hidden}
-    .chip{border-radius:999px;padding:9px 13px;color:var(--muted);transition:all .18s ease;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .chips{display:flex;gap:8px;justify-content:center;flex-wrap:nowrap;max-width:100%;overflow:auto hidden;scrollbar-width:none;padding-bottom:2px}.chips::-webkit-scrollbar{display:none}
+    .chip{border-radius:999px;padding:8px 12px;color:var(--muted);transition:all .18s ease;max-width:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 0 auto}
     .chip:hover{color:var(--text);border-color:rgba(0,122,255,.24);box-shadow:0 0 0 1px rgba(0,122,255,.14)}
 
     .thread{display:none}
@@ -214,7 +214,7 @@
     .sources-inline{margin-top:20px;padding-top:0}.sources-footnotes{display:grid;gap:8px;color:var(--muted);font-size:12px;line-height:1.6;opacity:.96;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.03)}.sources-footnotes a{text-decoration:none;border-bottom:1px solid transparent}.sources-footnotes a:hover{border-color:currentColor}.sources-footnotes .domain{color:var(--muted)}.sources-footnotes .footnote-index{color:var(--muted)}
 
     .bottom-composer{display:none;position:fixed;left:272px;right:0;bottom:0;background:linear-gradient(to top, rgba(5,5,5,.95) 56%, rgba(5,5,5,0));padding:14px 16px calc(14px + env(safe-area-inset-bottom));transition:right .3s ease;backdrop-filter:blur(8px)}
-    .bottom-composer.visible{display:block}.app.artifact-open .bottom-composer{right:min(360px,44vw)}.bottom-composer .composer{max-width:1020px;margin:0 auto;padding:0 20px}.bottom-composer .composer-menu{top:auto;bottom:calc(100% + 12px)}.status{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.14em;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.02)}
+    .bottom-composer.visible{display:block}.app.artifact-open .bottom-composer{right:min(360px,44vw)}.bottom-composer .composer{max-width:1020px;margin:0 auto;padding:0 20px}.bottom-composer .composer-menu{top:auto;bottom:calc(100% + 12px)}.status{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.12em;padding:5px 7px;border-radius:999px;background:rgba(255,255,255,.02)}
 
     .artifact-panel{position:relative;border-left:1px solid rgba(255,255,255,.08);background:var(--codebg);color:#f4f4f4;transform:translateX(100%);transition:transform .3s ease;overflow:hidden;display:flex;flex-direction:column;box-shadow:-20px 0 40px rgba(0,0,0,.36)}
     .app.artifact-open .artifact-panel{transform:translateX(0)}
@@ -230,22 +230,23 @@
       .sidebar.open{transform:translateX(0)}
       .sidebar-close{display:inline-flex}
       .menu-btn{display:block}
-      .topbar{padding:0 14px;height:54px}
-      .content-wrap{padding:10px 0 104px}
-      .article-shell{padding:0 14px}
+      .topbar{padding:0 12px;height:50px}
+      .content-wrap{padding:6px 0 96px}
+      .article-shell{padding:0 12px}
       .thread-shell{padding:0}
-      .home-state{min-height:calc(100dvh - 54px - env(safe-area-inset-bottom));align-items:center;text-align:left;padding:0}
-      .home-shell{justify-items:start;text-align:left;gap:12px}
-      .hero-title{font-size:clamp(26px, 10vw, 34px);max-width:8ch}
-      .hero-subtitle{font-size:13px;line-height:1.58}
-      .chips{justify-content:flex-start;gap:8px}
-      .bottom-composer{left:0;right:0;padding:10px 0 calc(12px + env(safe-area-inset-bottom))}
+      .home-state{min-height:calc(100svh - 54px - env(safe-area-inset-bottom));align-items:center;text-align:left;padding:0}
+      .home-shell{justify-items:start;text-align:left;gap:10px;align-content:center}
+      .hero-title{font-size:clamp(24px, 8.6vw, 30px);max-width:7ch;line-height:.96}
+      .hero-subtitle{font-size:12px;line-height:1.48;max-width:30ch}
+      .chips{justify-content:flex-start;gap:8px;margin-right:-14px;padding-right:14px}
+      .bottom-composer{left:0;right:0;padding:8px 0 calc(10px + env(safe-area-inset-bottom))}
       .app.artifact-open .bottom-composer{right:0}
-      .bottom-composer .composer{padding:0 14px}
+      .bottom-composer .composer{padding:0 12px}
       .message.user .message-body{max-width:100%}
       .toast{left:16px;right:16px;max-width:none}
       .artifact-panel{position:fixed;inset:0;z-index:35;border-left:0;width:100%}
     }
+    @media (max-height: 760px) and (max-width: 900px){.home-footnote{display:none}.chips{margin-top:2px}.hero-subtitle{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}}
   </style>
 </head>
 <body>
