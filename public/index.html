@@ -165,12 +165,12 @@
     .bottom-composer{display:none;position:fixed;left:272px;right:0;bottom:0;background:linear-gradient(to top, rgba(23,24,28,.96) 60%, rgba(23,24,28,0));padding:10px 0 calc(10px + env(safe-area-inset-bottom));transition:right .3s ease;backdrop-filter:blur(8px)}
     .bottom-composer.visible{display:block}.app.artifact-open .bottom-composer{right:min(360px,44vw)}
     .bottom-composer .composer{max-width:860px;margin:0 auto;padding:0 12px}
-    .bottom-composer .composer-shell{border-radius:24px;padding:16px 16px 14px;grid-template-columns:1fr auto;grid-template-areas:'input send' 'tools tools';row-gap:12px;background:#24252b;border:1px solid rgba(255,255,255,.06);box-shadow:none}
-    .bottom-composer .composer-left{grid-area:tools}
-    .bottom-composer .composer-input{grid-area:input;font-size:15px;padding:0 2px 0 0}
-    .bottom-composer .send-btn{grid-area:send}
+    .bottom-composer .composer-shell{border-radius:24px;padding:12px 14px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;background:#24252b;border:1px solid rgba(255,255,255,.06);box-shadow:none}
+    .bottom-composer .composer-left{position:relative;display:flex;align-items:center}
+    .bottom-composer .composer-input{font-size:15px;padding:8px 2px;min-width:0;color:var(--text);background:transparent !important;border:0 !important;-webkit-appearance:none;appearance:none}
+    .bottom-composer .send-btn{padding:0}
     .bottom-composer .composer-menu{top:auto;bottom:calc(100% + 12px)}
-    .composer-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .composer-tools{display:flex;align-items:center;gap:10px}
     .icon-btn{display:grid;place-items:center;width:32px;height:32px;border-radius:999px;color:var(--muted);border:1px solid rgba(255,255,255,.06)}
     .icon-btn.active{color:#dce4ff;border-color:rgba(91,140,255,.28);background:rgba(91,140,255,.12)}
     .icon-btn:hover{color:var(--text);border-color:rgba(255,255,255,.12)}
@@ -196,10 +196,10 @@
       .hero-title{font-size:clamp(30px, 9.2vw, 38px);max-width:10ch;line-height:1.08}
       .hero-subtitle{font-size:13px;line-height:1.55;max-width:28ch}
       .chips{justify-content:center;gap:8px;margin-right:0;padding-right:0;flex-wrap:wrap;overflow:hidden}
-      .bottom-composer{left:0;right:0;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
+      .bottom-composer{left:0;right:0;padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
       .app.artifact-open .bottom-composer{right:0}
-      .bottom-composer .composer{padding:0 12px}
-      .message.user .message-body{max-width:min(74%,240px)}
+      .bottom-composer .composer{padding:0 10px}
+      .message.user .message-body{max-width:min(70%,220px)}
       .toast{left:16px;right:16px;max-width:none}
       .artifact-panel{position:fixed;inset:0;z-index:35;border-left:0;width:100%}
     }
@@ -230,7 +230,7 @@
             <section id="threadView" class="thread"><div class="thread-shell"><div id="threadBody"></div></div></section>
           </div>
         </div>
-        <div id="bottomComposer" class="bottom-composer"><div class="composer"><div class="composer-shell"><input id="followupInput" class="composer-input" type="text" placeholder="Type a message" autocomplete="off" /><button id="followupSend" type="button" class="send-btn" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m12 5 6.5 7-6.5 7"/></svg></button><div class="composer-left composer-tools"><button id="followupPlus" type="button" class="icon-btn" aria-label="More options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div id="followupMenu" class="composer-menu"><button type="button" class="composer-menu-item" data-toggle-debate="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h7l2 3h7"></path><path d="M6 17h7l2-3h5"></path><circle cx="6" cy="7" r="2"></circle><circle cx="18" cy="17" r="2"></circle></svg><span class="composer-menu-label"><span class="composer-menu-title">Debate</span><span class="composer-menu-meta">Off</span></span></button></div></div></div></div></div>
+        <div id="bottomComposer" class="bottom-composer"><div class="composer"><div class="composer-shell"><div class="composer-left"><button id="followupPlus" type="button" class="icon-btn" aria-label="More options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div id="followupMenu" class="composer-menu"><button type="button" class="composer-menu-item" data-toggle-debate="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h7l2 3h7"></path><path d="M6 17h7l2-3h5"></path><circle cx="6" cy="7" r="2"></circle><circle cx="18" cy="17" r="2"></circle></svg><span class="composer-menu-label"><span class="composer-menu-title">Debate</span><span class="composer-menu-meta">Off</span></span></button></div></div><input id="followupInput" class="composer-input" type="text" placeholder="Type a message" autocomplete="off" /><button id="followupSend" type="button" class="send-btn" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m12 5 6.5 7-6.5 7"/></svg></button></div></div></div>
       </div>
     </main>
     <aside id="artifactPanel" class="artifact-panel" aria-hidden="true"><div class="artifact-header"><div class="artifact-left"><button id="artifactClose" class="artifact-close" aria-label="Close artifact">✕</button><div id="artifactTabs" class="artifact-tabs"></div></div><div class="artifact-actions"><button id="artifactCopy" class="artifact-action">Copy</button><button id="artifactDownload" class="artifact-action">↓</button></div></div><div class="artifact-body"><div id="artifactMarkdown" class="artifact-markdown" style="display:none;padding:22px;color:#f4f4f4"></div><pre id="artifactPre"><code id="artifactCode"></code></pre></div></aside>
