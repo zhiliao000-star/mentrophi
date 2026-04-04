@@ -7,7 +7,7 @@
   <meta name="description" content="Mentrophi is a conversational AI assistant with lightweight background research when needed." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -15,16 +15,16 @@
     :root {
       --bg: #050505;
       --bg-soft: #0a0a0c;
-      --panel: rgba(255, 255, 255, 0.03);
-      --panel-strong: rgba(255, 255, 255, 0.05);
+      --panel: rgba(255, 255, 255, 0.025);
+      --panel-strong: rgba(255, 255, 255, 0.04);
       --border: rgba(255, 255, 255, 0.08);
-      --border-strong: rgba(255, 255, 255, 0.14);
+      --border-strong: rgba(255, 255, 255, 0.12);
       --text: #ffffff;
-      --muted: #a0a0a0;
-      --muted-2: #7d7d86;
-      --accent: #007AFF;
-      --accent-soft: rgba(0, 122, 255, 0.14);
-      --pink: #ec4899;
+      --muted: #9a9aa1;
+      --muted-2: #75757d;
+      --accent: #4f6bff;
+      --accent-soft: rgba(79, 107, 255, 0.16);
+      --pink: #8b5cf6;
       --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.28);
       --shadow-panel: 0 22px 64px rgba(0, 0, 0, 0.36);
       --glow: 0 0 0 1px rgba(0,122,255,.22), 0 0 24px rgba(0,122,255,.18);
@@ -39,7 +39,7 @@
     *{box-sizing:border-box}
     html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);scroll-behavior:smooth}
     body{
-      font-family:'JetBrains Mono','SF Mono','Fira Code','IBM Plex Mono',monospace;
+      font-family:'Inter',system-ui,sans-serif;
       font-size:15px;
       line-height:1.7;
       -webkit-font-smoothing:antialiased;
@@ -94,20 +94,20 @@
 
     .sidebar{
       min-width:0;
-      border-right:1px solid rgba(255,255,255,.06);
+      border-right:1px solid rgba(255,255,255,.04);
       padding:18px 14px 14px;
       display:flex;
       flex-direction:column;
       gap:18px;
       z-index:30;
-      background:rgba(255,255,255,0.025);
+      background:#1c1c1f;
     }
     .sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .brand{display:flex;gap:10px;align-items:center;font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--text)}
-    .brand span:first-child{display:grid;place-items:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--pink));color:#fff;font-size:11px;box-shadow:0 0 24px rgba(0,122,255,.25)}
+    .brand span:first-child{display:grid;place-items:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,var(--pink),var(--accent));color:#fff;font-size:11px;box-shadow:none}
     .sidebar-close{display:none;width:32px;height:32px;align-items:center;justify-content:center;color:var(--text);font-size:18px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
     .new-chat{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:13px 14px;border-radius:16px;font-weight:600;color:var(--text);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;background:rgba(255,255,255,.035)}
-    .new-chat::after{content:'⌘K';font-size:11px;color:var(--muted)}
+    .new-chat::after{content:'+';font-size:20px;color:var(--muted);line-height:1}
     .new-chat:hover{transform:translateY(-1px);border-color:rgba(0,122,255,.32);box-shadow:var(--glow)}
     .history-title{font-size:11px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)}
     .history-list{display:grid;gap:8px;align-content:start}
@@ -138,14 +138,14 @@
     .article-shell{max-width:1020px;margin:0 auto;width:100%}
     .thread-shell{max-width:860px;margin:0 auto;width:100%}
 
-    .home-state{min-height:calc(100svh - 58px);display:grid;place-items:center;padding:0}
-    .home-shell{width:min(100%,720px);display:grid;gap:12px;justify-items:center;text-align:center;animation:riseIn .6s ease both}
-    .home-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-size:12px;color:var(--muted);font-weight:600}
-    .home-badge::before{content:'SYSTEM';color:var(--accent);font-size:11px}
-    .hero-title{font-size:clamp(32px,4.6vw,56px);font-weight:700;letter-spacing:-0.055em;line-height:.98;max-width:11ch;margin:0}
-    .hero-subtitle{margin:0;max-width:680px;color:var(--muted);font-size:14px;line-height:1.7}
+    .home-state{min-height:calc(100svh - 56px);display:grid;place-items:center;padding:0}
+    .home-shell{width:min(100%,720px);display:grid;gap:14px;justify-items:center;text-align:center;align-content:center;animation:riseIn .6s ease both}
+    .home-badge{display:inline-flex;align-items:center;gap:8px;padding:0;border-radius:999px;font-size:12px;color:var(--muted);font-weight:600;background:transparent;border:0;box-shadow:none}
+    .home-badge::before{content:'✦';color:var(--accent);font-size:22px}
+    .hero-title{font-size:clamp(36px,4.6vw,58px);font-weight:700;letter-spacing:-0.05em;line-height:1.04;max-width:10ch;margin:0}
+    .hero-subtitle{margin:0;max-width:560px;color:var(--muted);font-size:14px;line-height:1.65}
     .hero-mark{display:none}
-    .home-composer-wrap{width:100%;display:grid;gap:10px}
+    .home-composer-wrap{display:none}
     .home-footnote{margin:0;color:var(--muted-2);font-size:11px}
 
     .composer{position:relative;width:100%}
@@ -167,6 +167,7 @@
     .composer-menu-meta{font-size:11px;color:var(--muted)}
     .send-btn{width:36px;height:36px;border-radius:18px;background:transparent;border:1px solid rgba(0,122,255,.4);color:var(--accent);display:grid;place-items:center;font-size:14px;line-height:1;flex:none;transition:all .2s ease}
     .send-btn:hover{background:rgba(0,122,255,.14);box-shadow:var(--glow);transform:scale(1.05)}
+    .composer-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.mode-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:var(--muted);background:transparent;font-size:13px;transition:all .2s ease}.mode-pill.active{color:#9db3ff;border-color:rgba(79,107,255,.32);background:rgba(79,107,255,.12)}.composer-actions{margin-left:auto;display:flex;align-items:center;gap:10px}.icon-btn{display:grid;place-items:center;width:32px;height:32px;border-radius:999px;color:var(--muted);border:1px solid rgba(255,255,255,.08)}.icon-btn:hover,.mode-pill:hover{color:var(--text);border-color:rgba(255,255,255,.14)}
 
     .chips{display:flex;gap:8px;justify-content:center;flex-wrap:nowrap;max-width:100%;overflow:auto hidden;scrollbar-width:none;padding-bottom:2px}.chips::-webkit-scrollbar{display:none}
     .chip{border-radius:999px;padding:8px 12px;color:var(--muted);transition:all .18s ease;max-width:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 0 auto}
@@ -177,8 +178,8 @@
     .message{margin:0 0 28px}
     .message.user{display:flex;justify-content:flex-end}
     .message.assistant{display:block}
-    .message.user .message-body{max-width:min(74%,620px);padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);box-shadow:none}
-    .message.assistant .message-body{max-width:100%;padding:0 2px}
+    .message.user .message-body{max-width:min(68%,420px);padding:14px 18px;border-radius:22px;background:#2a2a2d;border:0;box-shadow:none;color:#fff}
+    .message.assistant .message-body{max-width:100%;padding:0}
     .message-body{font-size:15px;line-height:1.84;overflow-wrap:anywhere}
     .message-body h1,.message-body h2,.message-body h3,.message-body h4{line-height:1.18;font-weight:700;letter-spacing:-0.03em;margin:1.35em 0 .72em}
     .message-body h2{font-size:22px}
@@ -230,19 +231,19 @@
       .sidebar.open{transform:translateX(0)}
       .sidebar-close{display:inline-flex}
       .menu-btn{display:block}
-      .topbar{padding:0 12px;height:50px}
-      .content-wrap{padding:6px 0 96px}
+      .topbar{padding:0 12px;height:52px}
+      .content-wrap{padding:2px 0 104px}
       .article-shell{padding:0 12px}
       .thread-shell{padding:0}
-      .home-state{min-height:calc(100svh - 54px - env(safe-area-inset-bottom));align-items:center;text-align:left;padding:0}
-      .home-shell{justify-items:start;text-align:left;gap:10px;align-content:center}
-      .hero-title{font-size:clamp(24px, 8.6vw, 30px);max-width:7ch;line-height:.96}
-      .hero-subtitle{font-size:12px;line-height:1.48;max-width:30ch}
-      .chips{justify-content:flex-start;gap:8px;margin-right:-14px;padding-right:14px}
-      .bottom-composer{left:0;right:0;padding:8px 0 calc(10px + env(safe-area-inset-bottom))}
+      .home-state{min-height:calc(100svh - 52px - env(safe-area-inset-bottom));align-items:center;text-align:center;padding:0}
+      .home-shell{justify-items:center;text-align:center;gap:12px;align-content:center}
+      .hero-title{font-size:clamp(28px, 9.5vw, 36px);max-width:9ch;line-height:1.05}
+      .hero-subtitle{font-size:13px;line-height:1.5;max-width:30ch}
+      .chips{justify-content:center;gap:8px;margin-right:0;padding-right:0}
+      .bottom-composer{left:0;right:0;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
       .app.artifact-open .bottom-composer{right:0}
       .bottom-composer .composer{padding:0 12px}
-      .message.user .message-body{max-width:min(88%,420px)}
+      .message.user .message-body{max-width:min(76%,260px)}
       .toast{left:16px;right:16px;max-width:none}
       .artifact-panel{position:fixed;inset:0;z-index:35;border-left:0;width:100%}
     }
@@ -259,26 +260,22 @@
       <div id="historyList" class="history-list"></div>
     </aside>
     <main class="main">
-      <header class="topbar"><button id="menuBtn" class="menu-btn">☰</button><div id="topQuery" class="top-query">New chat</div><div class="topbar-right"><div id="statusText" class="status">Idle</div></div></header>
+      <header class="topbar"><button id="menuBtn" class="menu-btn">☰</button><div id="topQuery" class="top-query">New chat</div><div class="topbar-right"><button id="topNewChatBtn" class="top-action" aria-label="New chat">⊕</button></div></header>
       <div class="main-stage">
         <div class="content-wrap">
           <div class="article-shell">
             <section id="homeState" class="home-state">
               <div class="home-shell">
                 <div class="home-badge">Mentrophi</div>
-                <h1 class="hero-title">Talk naturally. Get smarter answers.</h1>
-                <p class="hero-subtitle">Ask naturally. Mentrophi should quietly handle research and reasoning while still feeling like normal chat.</p>
-                <div class="home-composer-wrap">
-                  <div class="composer"><div class="composer-shell"><div class="composer-left"><button id="homePlus" type="button" class="composer-plus" aria-label="More options">+</button><div id="homeMenu" class="composer-menu"><button type="button" class="composer-menu-item" data-toggle-debate="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h7l2 3h7"></path><path d="M6 17h7l2-3h5"></path><circle cx="6" cy="7" r="2"></circle><circle cx="18" cy="17" r="2"></circle></svg><span class="composer-menu-label"><span class="composer-menu-title">Debate</span><span class="composer-menu-meta">Off</span></span></button></div></div><input id="homeInput" class="composer-input" type="text" placeholder="Ask Mentrophi" autocomplete="off" /><button id="homeSend" type="button" class="send-btn" aria-label="Send">↑</button></div></div>
-                  <div class="chips"><button class="chip" data-query="Climate tipping points">Climate tipping points</button><button class="chip" data-query="How LLMs work">How LLMs work</button><button class="chip" data-query="Stoicism today">Stoicism today</button></div>
-                  <p class="home-footnote">Normal chat by default · Real-time research when it matters</p>
-                </div>
+                <h1 class="hero-title">How can I help you?</h1>
+                <p class="hero-subtitle">Mentrophi quietly researches when needed, but always feels like normal chat.</p>
+                <div class="chips"><button class="chip" data-query="Climate tipping points">Climate tipping points</button><button class="chip" data-query="How LLMs work">How LLMs work</button><button class="chip" data-query="Stoicism today">Stoicism today</button></div>
               </div>
             </section>
             <section id="threadView" class="thread"><div class="thread-shell"><div id="threadBody"></div></div></section>
           </div>
         </div>
-        <div id="bottomComposer" class="bottom-composer"><div class="composer"><div class="composer-shell"><div class="composer-left"><button id="followupPlus" type="button" class="composer-plus" aria-label="More options">+</button><div id="followupMenu" class="composer-menu"><button type="button" class="composer-menu-item" data-toggle-debate="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h7l2 3h7"></path><path d="M6 17h7l2-3h5"></path><circle cx="6" cy="7" r="2"></circle><circle cx="18" cy="17" r="2"></circle></svg><span class="composer-menu-label"><span class="composer-menu-title">Debate</span><span class="composer-menu-meta">Off</span></span></button></div></div><input id="followupInput" class="composer-input" type="text" placeholder="Reply to Mentrophi..." autocomplete="off" /><button id="followupSend" type="button" class="send-btn" aria-label="Send">↑</button></div></div></div>
+        <div id="bottomComposer" class="bottom-composer"><div class="composer"><div class="composer-shell"><input id="followupInput" class="composer-input" type="text" placeholder="Type a message" autocomplete="off" /><button id="followupSend" type="button" class="send-btn" aria-label="Send">↑</button><div class="composer-left composer-tools"><button type="button" class="mode-pill" data-toggle-debate="true">✳ Debate</button><div class="composer-actions"><button id="followupPlus" type="button" class="icon-btn" aria-label="More options">+</button><button type="button" class="icon-btn" aria-label="Voice">◔</button></div><div id="followupMenu" class="composer-menu"><button type="button" class="composer-menu-item" data-toggle-debate="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h7l2 3h7"></path><path d="M6 17h7l2-3h5"></path><circle cx="6" cy="7" r="2"></circle><circle cx="18" cy="17" r="2"></circle></svg><span class="composer-menu-label"><span class="composer-menu-title">Debate</span><span class="composer-menu-meta">Off</span></span></button></div></div></div></div></div>
       </div>
     </main>
     <aside id="artifactPanel" class="artifact-panel" aria-hidden="true"><div class="artifact-header"><div class="artifact-left"><button id="artifactClose" class="artifact-close" aria-label="Close artifact">✕</button><div id="artifactTabs" class="artifact-tabs"></div></div><div class="artifact-actions"><button id="artifactCopy" class="artifact-action">Copy</button><button id="artifactDownload" class="artifact-action">↓</button></div></div><div class="artifact-body"><div id="artifactMarkdown" class="artifact-markdown" style="display:none;padding:22px;color:#f4f4f4"></div><pre id="artifactPre"><code id="artifactCode"></code></pre></div></aside>
@@ -287,7 +284,7 @@
   <script>
     const STORAGE_KEY='mentrophi-history-v2';
     const state={sessions:[],activeSessionId:null,currentAnswer:'',currentSources:[],abortController:null,currentMeta:{codeMode:false},artifactFiles:[],activeArtifactIndex:0,twoAgentReview:false};
-    const app=document.getElementById('app'),sidebar=document.getElementById('sidebar'),overlay=document.getElementById('overlay'),menuBtn=document.getElementById('menuBtn'),sidebarClose=document.getElementById('sidebarClose'),newChatBtn=document.getElementById('newChatBtn'),historyList=document.getElementById('historyList'),homeState=document.getElementById('homeState'),threadView=document.getElementById('threadView'),threadBody=document.getElementById('threadBody'),homeInput=document.getElementById('homeInput'),homeSend=document.getElementById('homeSend'),followupInput=document.getElementById('followupInput'),followupSend=document.getElementById('followupSend'),bottomComposer=document.getElementById('bottomComposer'),statusText=document.getElementById('statusText'),topQuery=document.getElementById('topQuery'),toast=document.getElementById('toast'),artifactPanel=document.getElementById('artifactPanel'),artifactTabs=document.getElementById('artifactTabs'),artifactCode=document.getElementById('artifactCode'),artifactMarkdown=document.getElementById('artifactMarkdown'),artifactPre=document.getElementById('artifactPre'),artifactClose=document.getElementById('artifactClose'),artifactCopy=document.getElementById('artifactCopy'),artifactDownload=document.getElementById('artifactDownload'),homePlus=document.getElementById('homePlus'),followupPlus=document.getElementById('followupPlus'),homeMenu=document.getElementById('homeMenu'),followupMenu=document.getElementById('followupMenu');
+    const app=document.getElementById('app'),sidebar=document.getElementById('sidebar'),overlay=document.getElementById('overlay'),menuBtn=document.getElementById('menuBtn'),sidebarClose=document.getElementById('sidebarClose'),newChatBtn=document.getElementById('newChatBtn'),historyList=document.getElementById('historyList'),homeState=document.getElementById('homeState'),threadView=document.getElementById('threadView'),threadBody=document.getElementById('threadBody'),homeInput=document.getElementById('homeInput'),homeSend=document.getElementById('homeSend'),followupInput=document.getElementById('followupInput'),followupSend=document.getElementById('followupSend'),bottomComposer=document.getElementById('bottomComposer'),statusText=document.getElementById('statusText'),topQuery=document.getElementById('topQuery'),toast=document.getElementById('toast'),artifactPanel=document.getElementById('artifactPanel'),artifactTabs=document.getElementById('artifactTabs'),artifactCode=document.getElementById('artifactCode'),artifactMarkdown=document.getElementById('artifactMarkdown'),artifactPre=document.getElementById('artifactPre'),artifactClose=document.getElementById('artifactClose'),artifactCopy=document.getElementById('artifactCopy'),artifactDownload=document.getElementById('artifactDownload'),homePlus=document.getElementById('homePlus'),followupPlus=document.getElementById('followupPlus'),homeMenu=document.getElementById('homeMenu'),followupMenu=document.getElementById('followupMenu'),topNewChatBtn=document.getElementById('topNewChatBtn');
     marked.setOptions({breaks:true,gfm:true});
     function escapeHtml(text=''){return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
     function closeSidebar(){sidebar.classList.remove('open');overlay.classList.remove('open');} function openSidebar(){sidebar.classList.add('open');overlay.classList.add('open');}
@@ -317,22 +314,22 @@
     }
     function renderThread(){const session=getActiveSession(); if(!session||!session.messages.length){threadBody.innerHTML='<div class="placeholder">Start a conversation.</div>';  return;} threadBody.innerHTML=session.messages.map((message,index)=>{const review=message.review||{}; const turnCount=Array.isArray(review.timeline)?review.timeline.length:0; const attrs=message.role==='assistant'&&((review.running)||turnCount)?` data-debate-active="true" data-debate-turn-count="${turnCount}"`:''; return `<article class="message ${message.role}"${attrs}><div class="message-body">${renderMessageContent(message,index)}</div></article>`;}).join(''); threadBody.querySelectorAll('.artifact-open').forEach(btn=>btn.addEventListener('click',()=>{const msg=session.messages[Number(btn.dataset.messageIndex)]; const codeFiles=extractCodeBlocks(msg.content||''); const writingFiles=codeFiles.length?[]:extractWritingArtifact(msg.content||''); state.artifactFiles=[...codeFiles,...writingFiles]; openArtifact(Number(btn.dataset.fileIndex));})); threadBody.querySelectorAll('.share-btn').forEach(btn=>btn.addEventListener('click',()=>{const msg=session.messages[Number(btn.dataset.messageIndex)]; shareFiles(extractCodeBlocks(msg.content||''), session.query||session.title||'');})); }
     function setStatus(text){statusText.textContent=text}
-    function setDebateEnabled(enabled){state.twoAgentReview=!!enabled; document.querySelectorAll('[data-toggle-debate="true"]').forEach(item=>{const meta=item.querySelector('.composer-menu-meta'); if(meta) meta.textContent=state.twoAgentReview?'On':'Off';}); syncPlusButtons(); persistComposerFlags();}
+    function setDebateEnabled(enabled){state.twoAgentReview=!!enabled; document.querySelectorAll('[data-toggle-debate="true"]').forEach(item=>{const meta=item.querySelector('.composer-menu-meta'); if(meta) meta.textContent=state.twoAgentReview?'On':'Off'; item.classList.toggle('active',state.twoAgentReview);}); syncPlusButtons(); persistComposerFlags();}
     function syncPlusButtons(){[homePlus,followupPlus].forEach(btn=>btn&&btn.classList.toggle('active',state.twoAgentReview));}
     function persistComposerFlags(){const session=getActiveSession(); if(session){session.twoAgentReview=state.twoAgentReview; saveSessions();}}
     function closeComposerMenus(){[homeMenu,followupMenu].forEach(menu=>menu&&menu.classList.remove('open'));}
     function toggleComposerMenu(menu){const willOpen=!menu.classList.contains('open'); closeComposerMenus(); if(willOpen) menu.classList.add('open');}
     function bindComposerMenu(button,menu){if(!button||!menu) return; button.addEventListener('click',(e)=>{e.preventDefault(); e.stopPropagation(); toggleComposerMenu(menu);}); menu.querySelectorAll('[data-toggle-debate="true"]').forEach(item=>item.addEventListener('click',()=>{setDebateEnabled(!state.twoAgentReview); closeComposerMenus();}));}
-        function showHome(){homeState.style.display='grid';threadView.classList.remove('active');topQuery.textContent='New chat';threadBody.innerHTML='';bottomComposer.classList.remove('visible');closeArtifact();setStatus('Idle');}
-    function showThread(session){homeState.style.display='none';threadView.classList.add('active');topQuery.textContent=session.title||session.query||'Chat';renderThread();bottomComposer.classList.add('visible');setStatus('Ready');}
+        function showHome(){homeState.style.display='grid';threadView.classList.remove('active');topQuery.textContent='New chat';threadBody.innerHTML='';bottomComposer.classList.add('visible');followupInput.placeholder='Type a message';closeArtifact();setStatus('Idle');}
+    function showThread(session){homeState.style.display='none';threadView.classList.add('active');topQuery.textContent=session.title||session.query||'Chat';renderThread();bottomComposer.classList.add('visible');followupInput.placeholder='Type a message';setStatus('Ready');}
     function openSession(sessionId){state.activeSessionId=sessionId;renderHistory();const session=getActiveSession(); setDebateEnabled(!!session?.twoAgentReview); if(!session||!session.messages.length)showHome();else showThread(session);saveSessions();}
     async function runResearch(query){const trimmed=query.trim(); if(!trimmed) return; if(state.abortController) state.abortController.abort(); state.abortController=new AbortController(); let session=getActiveSession(); if(!session) session=createSession(trimmed); if(!session.messages.length && session.title==='New chat'){session.title=trimmed.slice(0,42); session.query=trimmed;} session.query = session.query || trimmed; session.twoAgentReview=state.twoAgentReview; session.history.push({role:'user',content:trimmed}); session.messages.push({role:'user',content:trimmed,sources:[],meta:{}}); const assistantMessage={role:'assistant',content:'',sources:[],meta:{codeMode:false},review:emptyReview()}; session.messages.push(assistantMessage); state.currentAnswer=''; renderHistory(); showThread(session); setStatus('Checking'); saveSessions(); try{const response=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:trimmed,history:session.history,twoAgentReview:state.twoAgentReview}),signal:state.abortController.signal}); if(!response.ok||!response.body){let message='Request failed.'; try{const error=await response.json(); message=error.error||message;}catch{} throw new Error(message);} const reader=response.body.getReader(); const decoder=new TextDecoder(); let buffer=''; let finished=false; while(!finished){const {value,done}=await reader.read(); if(done) break; buffer+=decoder.decode(value,{stream:true}); const events=buffer.split('\n\n'); buffer=events.pop()||''; for(const rawEvent of events){const lines=rawEvent.split('\n').filter(Boolean); let eventName='message'; let dataLine=''; for(const line of lines){if(line.startsWith('event:')) eventName=line.slice(6).trim(); if(line.startsWith('data:')) dataLine+=line.slice(5).trim();} if(!dataLine) continue; const payload=JSON.parse(dataLine); if(eventName==='meta'){assistantMessage.meta=payload||{codeMode:false}; if(payload?.reviewMode){assistantMessage.review=assistantMessage.review||emptyReview(); assistantMessage.review.running=true; renderThread(); saveSessions();}} else if(eventName==='sources'){assistantMessage.sources=payload.sources||[]; renderThread(); saveSessions();} else if(eventName==='review'){assistantMessage.review=assistantMessage.review||emptyReview(); assistantMessage.review.running=true; assistantMessage.review.timeline=assistantMessage.review.timeline||[]; assistantMessage.review.timeline.push({round:payload.round||1,agent:payload.agent||'Agent',text:payload.text||''}); renderThread(); saveSessions();} else if(eventName==='chunk'){state.currentAnswer+=payload.content||''; assistantMessage.content=state.currentAnswer; renderThread(); setStatus('Replying'); saveSessions();} else if(eventName==='error'){throw new Error(payload.error||'Streaming error.');} else if(eventName==='done'){if(assistantMessage.review) assistantMessage.review.running=false; renderThread(); saveSessions(); finished=true; break;}}} session.history.push({role:'assistant',content:assistantMessage.content.trim()}); setStatus('Complete'); saveSessions(); } catch(error){ if(error.name==='AbortError'){setStatus('Canceled'); return;} assistantMessage.content=error.message||'Something went wrong.'; renderThread(); setStatus('Error'); } finally {state.abortController=null;} }
     function researchModeLabel(query){return /(today|latest|current|news|look up|search the web|verify|official docs|documentation|release notes|changelog|who won|weather|forecast|score|odds)/i.test(query)?'Checking':'Thinking';}
-    function submitInput(input){const value=input.value.trim(); if(!value) return; input.value=''; runResearch(value);}
-    [homeInput,followupInput].forEach(input=>input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault(); submitInput(input);}}));
-    ['click','pointerup','touchend'].forEach(evt=>homeSend.addEventListener(evt,(e)=>{e.preventDefault();submitInput(homeInput);})); ['click','pointerup','touchend'].forEach(evt=>followupSend.addEventListener(evt,(e)=>{e.preventDefault();submitInput(followupInput);})); threadBody.addEventListener('click',(e)=>{const btn=e.target.closest('[data-review-toggle]'); if(!btn) return; const session=getActiveSession(); const idx=Number(btn.dataset.reviewToggle); const msg=session?.messages?.[idx]; if(!msg||!msg.review) return; msg.review.open=!msg.review.open; renderThread();}); newChatBtn.addEventListener('click',()=>{const session=createSession(''); openSession(session.id); homeInput.focus(); closeSidebar(); closeArtifact();}); menuBtn.addEventListener('click',openSidebar); sidebarClose.addEventListener('click',closeSidebar); overlay.addEventListener('click',()=>{closeSidebar(); closeArtifact();}); artifactClose.addEventListener('click',closeArtifact);
+    function submitInput(input){if(!input) return; const value=input.value.trim(); if(!value) return; input.value=''; runResearch(value);}
+    [homeInput,followupInput].filter(Boolean).forEach(input=>input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault(); submitInput(input);}}));
+    ['click','pointerup','touchend'].forEach(evt=>homeSend&&homeSend.addEventListener(evt,(e)=>{e.preventDefault();submitInput(homeInput);})); ['click','pointerup','touchend'].forEach(evt=>followupSend.addEventListener(evt,(e)=>{e.preventDefault();submitInput(followupInput);})); threadBody.addEventListener('click',(e)=>{const btn=e.target.closest('[data-review-toggle]'); if(!btn) return; const session=getActiveSession(); const idx=Number(btn.dataset.reviewToggle); const msg=session?.messages?.[idx]; if(!msg||!msg.review) return; msg.review.open=!msg.review.open; renderThread();}); newChatBtn.addEventListener('click',()=>{const session=createSession(''); openSession(session.id); homeInput.focus(); closeSidebar(); closeArtifact();}); menuBtn.addEventListener('click',openSidebar); sidebarClose.addEventListener('click',closeSidebar); overlay.addEventListener('click',()=>{closeSidebar(); closeArtifact();}); artifactClose.addEventListener('click',closeArtifact);
     artifactCopy.addEventListener('click',async()=>{const file=state.artifactFiles[state.activeArtifactIndex]; if(!file)return; await copyText(file.content||''); const t=artifactCopy.textContent; artifactCopy.textContent='Copied ✓'; setTimeout(()=>artifactCopy.textContent=t,2000);}); artifactDownload.addEventListener('click',()=>{const file=state.artifactFiles[state.activeArtifactIndex]; if(!file)return; const blob=new Blob([file.content||''],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=file.name; a.click(); URL.revokeObjectURL(a.href);});
-    document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',()=>{homeInput.value=chip.dataset.query||''; submitInput(homeInput);}));
+    document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',()=>{followupInput.value=chip.dataset.query||''; submitInput(followupInput);}));
     bindComposerMenu(homePlus,homeMenu); bindComposerMenu(followupPlus,followupMenu); document.addEventListener('click',(e)=>{if(e.target.closest('.composer-left')) return; closeComposerMenus();});
     loadSessions(); if(state.sessions.length){state.activeSessionId=state.sessions[0].id; openSession(state.activeSessionId);} else {setDebateEnabled(false); showHome(); renderHistory();}
   </script>
