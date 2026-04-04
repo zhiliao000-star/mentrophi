@@ -92,6 +92,7 @@
       display:grid; place-items:center; width:32px; height:32px; border-radius:999px;
       color:#d8d8dd; font-size:20px;
     }
+    .menu-btn svg,.top-action svg,.send-btn svg,.icon-btn svg{width:18px;height:18px}
     .menu-btn { display:none; }
     .top-action { font-size:18px; }
     .top-query { font-size:15px; font-weight:600; text-align:center; color:#f3f3f5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 10px; }
@@ -109,12 +110,11 @@
     .hero-title { font-size: clamp(36px,4.6vw,56px); font-weight:700; letter-spacing:-0.045em; line-height:1.08; max-width:11ch; margin:0; }
     .hero-subtitle { margin:0; max-width:520px; color:var(--muted); font-size:14px; line-height:1.6; }
     .hero-mark, .home-composer-wrap, .home-footnote { display:none; }
-    .chips { display:flex; gap:8px; justify-content:center; flex-wrap:nowrap; max-width:100%; overflow:auto hidden; scrollbar-width:none; padding-bottom:2px; }
-    .chips::-webkit-scrollbar { display:none; }
+    .chips { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; max-width:100%; overflow:hidden; }
     .chip {
       flex:0 0 auto; border-radius:999px; padding:10px 14px; white-space:nowrap;
       color:#d2d2d8; background:#202126; border:1px solid rgba(255,255,255,.06);
-      transition:all .18s ease;
+      transition:all .18s ease; max-width:100%; overflow:hidden; text-overflow:ellipsis;
     }
     .chip:hover { color:#fff; border-color:rgba(255,255,255,.12); }
 
@@ -171,11 +171,9 @@
     .bottom-composer .send-btn{grid-area:send}
     .bottom-composer .composer-menu{top:auto;bottom:calc(100% + 12px)}
     .composer-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .mode-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.08);color:var(--muted);background:transparent;font-size:13px;transition:all .2s ease}
-    .mode-pill.active{color:#dce4ff;border-color:rgba(91,140,255,.28);background:rgba(91,140,255,.12)}
-    .composer-actions{margin-left:auto;display:flex;align-items:center;gap:10px}
     .icon-btn{display:grid;place-items:center;width:32px;height:32px;border-radius:999px;color:var(--muted);border:1px solid rgba(255,255,255,.06)}
-    .icon-btn:hover,.mode-pill:hover{color:var(--text);border-color:rgba(255,255,255,.12)}
+    .icon-btn.active{color:#dce4ff;border-color:rgba(91,140,255,.28);background:rgba(91,140,255,.12)}
+    .icon-btn:hover{color:var(--text);border-color:rgba(255,255,255,.12)}
 
     .artifact-panel{position:relative;border-left:1px solid rgba(255,255,255,.08);background:var(--codebg);color:#f4f4f4;transform:translateX(100%);transition:transform .3s ease;overflow:hidden;display:flex;flex-direction:column;box-shadow:-20px 0 40px rgba(0,0,0,.36)}
     .app.artifact-open .artifact-panel{transform:translateX(0)}
@@ -193,11 +191,11 @@
       .content-wrap{padding:0 0 104px}
       .article-shell{padding:0 12px}
       .thread-shell{padding:0}
-      .home-state{min-height:calc(100svh - 52px - env(safe-area-inset-bottom));align-items:center;text-align:center;padding:0}
+      .home-state{min-height:calc(100svh - 52px - 112px - env(safe-area-inset-bottom));align-items:center;text-align:center;padding:0}
       .home-shell{justify-items:center;text-align:center;gap:14px;align-content:center}
       .hero-title{font-size:clamp(30px, 9.2vw, 38px);max-width:10ch;line-height:1.08}
       .hero-subtitle{font-size:13px;line-height:1.55;max-width:28ch}
-      .chips{justify-content:center;gap:8px;margin-right:0;padding-right:0}
+      .chips{justify-content:center;gap:8px;margin-right:0;padding-right:0;flex-wrap:wrap;overflow:hidden}
       .bottom-composer{left:0;right:0;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
       .app.artifact-open .bottom-composer{right:0}
       .bottom-composer .composer{padding:0 12px}
@@ -217,7 +215,7 @@
       <div id="historyList" class="history-list"></div>
     </aside>
     <main class="main">
-      <header class="topbar"><button id="menuBtn" class="menu-btn">☰</button><div id="topQuery" class="top-query">New chat</div><div class="topbar-right"><div id="statusText" class="status sr-only">Idle</div><button id="topNewChatBtn" class="top-action" aria-label="New chat">⊕</button></div></header>
+      <header class="topbar"><button id="menuBtn" class="menu-btn" aria-label="Open sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div id="topQuery" class="top-query">New chat</div><div class="topbar-right"><div id="statusText" class="status sr-only">Idle</div><button id="topNewChatBtn" class="top-action" aria-label="New chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9.2"/></svg></button></div></header>
       <div class="main-stage">
         <div class="content-wrap">
           <div class="article-shell">
@@ -232,7 +230,7 @@
             <section id="threadView" class="thread"><div class="thread-shell"><div id="threadBody"></div></div></section>
           </div>
         </div>
-        <div id="bottomComposer" class="bottom-composer"><div class="composer"><div class="composer-shell"><input id="followupInput" class="composer-input" type="text" placeholder="Type a message" autocomplete="off" /><button id="followupSend" type="button" class="send-btn" aria-label="Send">↑</button><div class="composer-left composer-tools"><button type="button" class="mode-pill" data-toggle-debate="true">✳ Debate</button></div></div></div></div>
+        <div id="bottomComposer" class="bottom-composer"><div class="composer"><div class="composer-shell"><input id="followupInput" class="composer-input" type="text" placeholder="Type a message" autocomplete="off" /><button id="followupSend" type="button" class="send-btn" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m12 5 6.5 7-6.5 7"/></svg></button><div class="composer-left composer-tools"><button id="followupPlus" type="button" class="icon-btn" aria-label="More options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div id="followupMenu" class="composer-menu"><button type="button" class="composer-menu-item" data-toggle-debate="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h7l2 3h7"></path><path d="M6 17h7l2-3h5"></path><circle cx="6" cy="7" r="2"></circle><circle cx="18" cy="17" r="2"></circle></svg><span class="composer-menu-label"><span class="composer-menu-title">Debate</span><span class="composer-menu-meta">Off</span></span></button></div></div></div></div></div>
       </div>
     </main>
     <aside id="artifactPanel" class="artifact-panel" aria-hidden="true"><div class="artifact-header"><div class="artifact-left"><button id="artifactClose" class="artifact-close" aria-label="Close artifact">✕</button><div id="artifactTabs" class="artifact-tabs"></div></div><div class="artifact-actions"><button id="artifactCopy" class="artifact-action">Copy</button><button id="artifactDownload" class="artifact-action">↓</button></div></div><div class="artifact-body"><div id="artifactMarkdown" class="artifact-markdown" style="display:none;padding:22px;color:#f4f4f4"></div><pre id="artifactPre"><code id="artifactCode"></code></pre></div></aside>
@@ -271,8 +269,8 @@
     }
     function renderThread(){const session=getActiveSession(); if(!session||!session.messages.length){threadBody.innerHTML='<div class="placeholder">Start a conversation.</div>';  return;} threadBody.innerHTML=session.messages.map((message,index)=>{const review=message.review||{}; const turnCount=Array.isArray(review.timeline)?review.timeline.length:0; const attrs=message.role==='assistant'&&((review.running)||turnCount)?` data-debate-active="true" data-debate-turn-count="${turnCount}"`:''; return `<article class="message ${message.role}"${attrs}><div class="message-body">${renderMessageContent(message,index)}</div></article>`;}).join(''); threadBody.querySelectorAll('.artifact-open').forEach(btn=>btn.addEventListener('click',()=>{const msg=session.messages[Number(btn.dataset.messageIndex)]; const codeFiles=extractCodeBlocks(msg.content||''); const writingFiles=codeFiles.length?[]:extractWritingArtifact(msg.content||''); state.artifactFiles=[...codeFiles,...writingFiles]; openArtifact(Number(btn.dataset.fileIndex));})); threadBody.querySelectorAll('.share-btn').forEach(btn=>btn.addEventListener('click',()=>{const msg=session.messages[Number(btn.dataset.messageIndex)]; shareFiles(extractCodeBlocks(msg.content||''), session.query||session.title||'');})); }
     function setStatus(text){statusText.textContent=text}
-    function setDebateEnabled(enabled){state.twoAgentReview=!!enabled; document.querySelectorAll('[data-toggle-debate="true"]').forEach(item=>{const meta=item.querySelector('.composer-menu-meta'); if(meta) meta.textContent=state.twoAgentReview?'On':'Off'; item.classList.toggle('active',state.twoAgentReview);}); syncPlusButtons(); persistComposerFlags();}
-    function syncPlusButtons(){[homePlus,followupPlus].forEach(btn=>btn&&btn.classList.toggle('active',state.twoAgentReview));}
+    function setDebateEnabled(enabled){state.twoAgentReview=!!enabled; document.querySelectorAll('[data-toggle-debate="true"]').forEach(item=>{const meta=item.querySelector('.composer-menu-meta'); if(meta) meta.textContent=state.twoAgentReview?'On':'Off';}); syncPlusButtons(); persistComposerFlags();}
+    function syncPlusButtons(){[followupPlus].forEach(btn=>btn&&btn.classList.toggle('active',state.twoAgentReview));}
     function persistComposerFlags(){const session=getActiveSession(); if(session){session.twoAgentReview=state.twoAgentReview; saveSessions();}}
         function showHome(){homeState.style.display='grid';threadView.classList.remove('active');topQuery.textContent='New chat';threadBody.innerHTML='';bottomComposer.classList.add('visible');followupInput.placeholder='Type a message';closeArtifact();setStatus('Idle');}
     function showThread(session){homeState.style.display='none';threadView.classList.add('active');topQuery.textContent=session.title||session.query||'Chat';renderThread();bottomComposer.classList.add('visible');followupInput.placeholder='Type a message';setStatus('Ready');}
@@ -284,7 +282,7 @@
     ['click','pointerup','touchend'].forEach(evt=>homeSend&&homeSend.addEventListener(evt,(e)=>{e.preventDefault();submitInput(homeInput);})); ['click','pointerup','touchend'].forEach(evt=>followupSend.addEventListener(evt,(e)=>{e.preventDefault();submitInput(followupInput);})); threadBody.addEventListener('click',(e)=>{const btn=e.target.closest('[data-review-toggle]'); if(!btn) return; const session=getActiveSession(); const idx=Number(btn.dataset.reviewToggle); const msg=session?.messages?.[idx]; if(!msg||!msg.review) return; msg.review.open=!msg.review.open; renderThread();}); newChatBtn.addEventListener('click',()=>{const session=createSession(''); openSession(session.id); homeInput.focus(); closeSidebar(); closeArtifact();}); menuBtn.addEventListener('click',openSidebar); sidebarClose.addEventListener('click',closeSidebar); overlay.addEventListener('click',()=>{closeSidebar(); closeArtifact();}); artifactClose.addEventListener('click',closeArtifact);
     artifactCopy.addEventListener('click',async()=>{const file=state.artifactFiles[state.activeArtifactIndex]; if(!file)return; await copyText(file.content||''); const t=artifactCopy.textContent; artifactCopy.textContent='Copied ✓'; setTimeout(()=>artifactCopy.textContent=t,2000);}); artifactDownload.addEventListener('click',()=>{const file=state.artifactFiles[state.activeArtifactIndex]; if(!file)return; const blob=new Blob([file.content||''],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=file.name; a.click(); URL.revokeObjectURL(a.href);});
     document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',()=>{followupInput.value=chip.dataset.query||''; submitInput(followupInput);}));
-    document.querySelectorAll('[data-toggle-debate="true"]').forEach(btn=>btn.addEventListener('click',()=>setDebateEnabled(!state.twoAgentReview)));
+    bindComposerMenu(followupPlus,followupMenu); document.addEventListener('click',(e)=>{if(e.target.closest('.composer-left')) return; closeComposerMenus();});
     loadSessions(); if(state.sessions.length){state.activeSessionId=state.sessions[0].id; openSession(state.activeSessionId);} else {setDebateEnabled(false); showHome(); renderHistory();}
   </script>
 </body>
