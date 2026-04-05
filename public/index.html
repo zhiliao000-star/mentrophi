@@ -312,17 +312,14 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      /* Shift content 5% above geometric center — optical center for chat UIs */
-      padding-bottom: calc(10vh + 60px);
-      padding-top: 40px;
-      padding-left: 16px;
-      padding-right: 16px;
+      padding: 40px 20px 120px;
     }
     .home-shell {
-      width: min(100%, 860px);
+      width: 100%;
+      max-width: 900px;
       display: flex;
       flex-direction: column;
-      gap: 36px;
+      gap: 32px;
       align-items: center;
       text-align: center;
     }
@@ -374,7 +371,7 @@
     }
 
     .home-composer-wrap {
-      width: min(100%, 880px);
+      width: 100%;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -1031,28 +1028,22 @@
       text-align: center;
     }
     @media (max-width: 900px) {
-      .sidebar-close { display:none; }
+      .sidebar-close { display: none; }
       .content-wrap { padding: 0 0 160px; }
-      .home-state {
-        min-height: calc(100svh - 58px);
-        padding: 24px 12px calc(160px + 20px);
-        justify-content: center;
-      }
+      .home-state { padding: 30px 16px 180px; }
     }
     @media (max-width: 640px) {
-      .top-query { font-size: 15px; font-weight: 600; }
-      .history-item { font-size: 15px; min-height: 44px; border-radius: 14px; }
-      .new-chat-label { font-size: 16px; }
-      .new-chat { min-height: 58px; border-radius: 18px; }
-      .home-state { padding: 20px 12px calc(200px + 20px); }
-      .home-shell { gap: 20px; }
-      .deepseek-home .hero-subtitle { white-space: normal; font-size: 13px; }
+      .home-state { padding: 24px 14px 200px; }
+      .home-shell { gap: 22px; }
+      .deepseek-home .hero-title { font-size: clamp(30px, 9vw, 48px); }
+      .deepseek-home .hero-subtitle { font-size: 13px; white-space: normal; }
     }
 
     .home-shell.deepseek-home {
-      gap: 24px;
-      padding: 0 16px;
-      width: min(100%, 900px);
+      gap: 28px;
+      padding: 0;
+      width: 100%;
+      max-width: 900px;
       animation: homeEnter .55s cubic-bezier(.22,.68,0,1.2) both;
     }
     @keyframes homeEnter {
@@ -1083,17 +1074,13 @@
     }
     .deepseek-home .hero-copy { gap: 10px; }
     .deepseek-home .hero-title {
-      font-size: clamp(38px, 7vw, 68px);
+      font-size: clamp(36px, 5.5vw, 64px);
       max-width: none;
       letter-spacing: -.032em;
       font-weight: 700;
       margin-top: 0;
-      line-height: 1.0;
-      /* Gradient text for the title */
-      background: linear-gradient(160deg, #ffffff 30%, #b8c8f0 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      line-height: 1.08;
+      color: #f0f2f8;
     }
     .deepseek-home .hero-subtitle {
       display: block;
@@ -1123,9 +1110,9 @@
 
     .home-composer-wrap,
     .bottom-composer .composer {
-      width: min(100%, 880px);
+      width: 100%;
+      max-width: 860px;
       margin: 0 auto;
-      max-width: 880px;
       padding: 0;
     }
     .ds-composer-shell {
