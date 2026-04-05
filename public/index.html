@@ -802,6 +802,265 @@
       .composer-shell { padding: 10px 12px; border-radius: 22px; }
       .chip { max-width: 100%; }
     }
+
+    /* DeepSeek-like mobile overrides */
+    :root {
+      --bg: #050608;
+      --sidebar: #232427;
+      --text: #f4f4f6;
+      --text-soft: #d9d9de;
+      --muted: #8f929d;
+      --muted-2: #6f7480;
+      --border: rgba(255,255,255,.09);
+      --sidebar-width: 308px;
+    }
+    body {
+      background: #050608;
+    }
+    .app, .app.artifact-open {
+      grid-template-columns: 1fr;
+    }
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: var(--sidebar-width);
+      transform: translateX(-100%);
+      transition: transform .22s ease;
+      background: #2b2d31;
+      border-right: 1px solid rgba(255,255,255,.07);
+      padding: 0;
+      z-index: 50;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .overlay.open { display:block; }
+    .sidebar-head { padding: 12px 16px; }
+    .brand-title { font-size: 13px; letter-spacing: .01em; }
+    .brand-subtitle { display: none; }
+    .new-chat { margin: 4px 16px 2px; border-radius: 18px; background: #2e3854; border: 0; }
+    .new-chat-label { color: #83a9ff; font-weight: 500; }
+    .new-chat-plus { display:none; }
+    .sidebar-section { padding: 4px 12px 12px; }
+    .history-title {
+      font-size: 38px;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--text-soft);
+      border-top: 0;
+      padding: 14px 8px 8px;
+      font-weight: 500;
+      display:none;
+    }
+    .history-item {
+      font-size: 20px;
+      border-radius: 16px;
+      padding: 10px 14px;
+      color: #f0f1f3;
+      border: 0;
+    }
+    .history-item.active,
+    .history-item:hover {
+      background: #2f3b5d;
+      color: #9ab7ff;
+      border: 0;
+    }
+
+    .topbar {
+      height: 58px;
+      grid-template-columns: 42px 1fr 42px;
+      border-bottom: 0;
+      background: #050608;
+      padding: 0 14px;
+    }
+    .menu-btn { display:grid; background: none; border:0; color:#ebedf2; }
+    .top-action { background:none; border:0; color:#ebedf2; }
+    .top-query {
+      color: #f4f5f8;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -.01em;
+      text-align: center;
+    }
+    @media (max-width: 900px) {
+      .sidebar-close { display:none; }
+      .content-wrap { padding: 0 0 170px; }
+      .home-state { min-height: calc(100svh - 58px - 170px); padding: 0; }
+    }
+    @media (max-width: 640px) {
+      .top-query { font-size: 15px; font-weight: 600; }
+      .history-item { font-size: 15px; }
+    }
+
+    .home-shell.deepseek-home {
+      gap: 14px;
+      align-content: center;
+      padding: 0 18px;
+      width: min(100%, 760px);
+    }
+    .deepseek-home .hero-mark {
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      color: #3f75ff;
+      width: auto;
+      height: auto;
+      font-size: 56px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .deepseek-home .hero-copy { gap: 0; }
+    .deepseek-home .hero-title {
+      font-size: clamp(42px, 8vw, 72px);
+      max-width: none;
+      letter-spacing: -.03em;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .deepseek-home .hero-subtitle,
+    .hero-eyebrow,
+    .suggestion-row,
+    .home-footnote {
+      display: none;
+    }
+
+    .bottom-composer {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+      display: block;
+      background: linear-gradient(to top, rgba(5,6,8,.96) 58%, rgba(5,6,8,0));
+      z-index: 30;
+    }
+    #bottomComposer { display: none; }
+    #bottomComposer.visible { display: block; }
+
+    .home-composer-wrap,
+    .bottom-composer .composer {
+      width: min(100%, 780px);
+      margin: 0 auto;
+      max-width: 780px;
+      padding: 0;
+    }
+    .ds-composer-shell {
+      display: block;
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: #1f2024;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
+      padding: 16px 16px 12px;
+    }
+    .ds-input {
+      width: 100%;
+      color: #f4f4f6;
+      font-size: 14px;
+      padding: 6px 4px 14px;
+      border: 0 !important;
+      background: transparent !important;
+    }
+    .ds-input::placeholder { color: #8f939d; }
+    .ds-controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 4px;
+    }
+    .ds-mode-group,
+    .ds-action-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mode-chip {
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      color: #d6d9e1;
+      background: #202126;
+      padding: 0 17px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .mode-chip-active {
+      background: rgba(67,102,255,.24);
+      border-color: rgba(99,130,255,.45);
+      color: #8fa8ff;
+    }
+    .mode-icon { font-size: 19px; line-height: 1; }
+    .debate-chip.active {
+      background: rgba(67,102,255,.24);
+      border-color: rgba(99,130,255,.45);
+      color: #8fa8ff;
+    }
+    .ds-icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.02);
+      color: #f0f3f8;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .ds-icon-btn svg { width: 22px; height: 22px; }
+
+    .composer-menu {
+      left: auto;
+      right: 0;
+      top: auto;
+      bottom: calc(100% + 12px);
+      min-width: 180px;
+      border-radius: 14px;
+      background: #191b20;
+      border: 1px solid rgba(255,255,255,.1);
+    }
+
+    .thread-shell {
+      max-width: 780px;
+      padding: 0 16px;
+    }
+    .thread-body {
+      padding-top: 12px;
+    }
+    .message { margin-bottom: 22px; }
+    .message.user { justify-content: flex-end; }
+    .message.user .message-body {
+      max-width: min(72%, 320px);
+      background: #2b2c31;
+      border: 0;
+      border-radius: 24px;
+      padding: 14px 18px;
+      color: #f4f5f8;
+      box-shadow: none;
+    }
+    .message.assistant .message-body {
+      color: #eff1f6;
+      font-size: 18px;
+      line-height: 1.6;
+    }
+    .message-body p, .message-body li {
+      color: #eff1f6;
+      font-size: 18px;
+      line-height: 1.62;
+    }
+
+    .assistant-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: #8b8f99;
+      margin-top: 12px;
+      font-size: 16px;
+    }
+    .assistant-actions .spacer { flex: 1; }
+
+    .artifact-panel { display: none; }
+    .app.artifact-open .artifact-panel { display: none; }
+
   </style>
 </head>
 <body>
@@ -852,55 +1111,46 @@
         <div class="content-wrap">
           <div class="article-shell">
             <section id="homeState" class="home-state">
-              <div class="home-shell">
-                <div class="hero-mark">M</div>
+              <div class="home-shell deepseek-home">
+                <div class="hero-mark">🐋</div>
                 <div class="hero-copy">
-                  <div class="hero-eyebrow">Mentrophi</div>
-                  <h1 class="hero-title">Ask anything.</h1>
-                  <p class="hero-subtitle">A calmer AI workspace for conversation, research, and focused iteration.</p>
+                  <h1 class="hero-title">How can I help you?</h1>
+                  <p class="hero-subtitle"> </p>
                 </div>
 
                 <div class="home-composer-wrap">
                   <div class="composer home-composer">
-                    <div class="composer-shell">
-                      <div class="composer-left">
-                        <button id="homePlus" type="button" class="icon-btn" aria-label="More options">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-                            <path d="M12 5v14M5 12h14"/>
-                          </svg>
-                        </button>
-                        <div id="homeMenu" class="composer-menu">
-                          <button type="button" class="composer-menu-item" data-toggle-debate="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M4 7h7l2 3h7"></path>
-                              <path d="M6 17h7l2-3h5"></path>
-                              <circle cx="6" cy="7" r="2"></circle>
-                              <circle cx="18" cy="17" r="2"></circle>
-                            </svg>
-                            <span class="composer-menu-label">
-                              <span class="composer-menu-title">Debate</span>
-                              <span class="composer-menu-meta">Off</span>
-                            </span>
+                    <div class="composer-shell ds-composer-shell">
+                      <input id="homeInput" class="composer-input ds-input" type="text" placeholder="Type a message or hold to speak" autocomplete="off" />
+                      <div class="ds-controls-row">
+                        <div class="ds-mode-group">
+                          <button type="button" class="mode-chip debate-chip" data-debate-chip="true">
+                            <span class="mode-icon">◎</span>
+                            <span>Think</span>
+                          </button>
+                          <button type="button" class="mode-chip mode-chip-active">
+                            <span class="mode-icon">🌐</span>
+                            <span>Search</span>
+                          </button>
+                        </div>
+                        <div class="ds-action-group">
+                          <button id="homePlus" type="button" class="icon-btn ds-icon-btn" aria-label="More options">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                          </button>
+                          <button id="homeSend" type="button" class="send-btn ds-icon-btn" aria-label="Send">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12c1.6-2.8 4-4.2 6-4.2 3.6 0 6 3.2 6 6.2 0 2.1-1.1 3.9-2.9 4.9"/><path d="M20 9v6"/><path d="M18 11.2 20 9l2 2.2"/></svg>
                           </button>
                         </div>
                       </div>
-                      <input id="homeInput" class="composer-input" type="text" placeholder="Message Mentrophi" autocomplete="off" />
-                      <button id="homeSend" type="button" class="send-btn" aria-label="Send">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M5 12h13"/><path d="m12 5 6.5 7-6.5 7"/>
-                        </svg>
-                      </button>
+                      <div id="homeMenu" class="composer-menu">
+                        <button type="button" class="composer-menu-item" data-toggle-debate="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h7l2 3h7"></path><path d="M6 17h7l2-3h5"></path><circle cx="6" cy="7" r="2"></circle><circle cx="18" cy="17" r="2"></circle></svg>
+                          <span class="composer-menu-label"><span class="composer-menu-title">Think Mode</span><span class="composer-menu-meta">Off</span></span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <div class="suggestion-row">
-                    <button class="chip" data-query="Compare GPT-5 and Claude for coding">Compare GPT-5 and Claude for coding</button>
-                    <button class="chip" data-query="Summarize today’s biggest AI news">Summarize today’s biggest AI news</button>
-                    <button class="chip" data-query="Help me plan a product landing page rewrite">Help me plan a product landing page rewrite</button>
-                  </div>
                 </div>
-
-                <div class="home-footnote">Fast chat when you want it. Research when you need it.</div>
               </div>
             </section>
 
@@ -914,34 +1164,34 @@
 
         <div id="bottomComposer" class="bottom-composer">
           <div class="composer">
-            <div class="composer-shell">
-              <div class="composer-left">
-                <button id="followupPlus" type="button" class="icon-btn" aria-label="More options">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-                    <path d="M12 5v14M5 12h14"/>
-                  </svg>
-                </button>
-                <div id="followupMenu" class="composer-menu">
-                  <button type="button" class="composer-menu-item" data-toggle-debate="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M4 7h7l2 3h7"></path>
-                      <path d="M6 17h7l2-3h5"></path>
-                      <circle cx="6" cy="7" r="2"></circle>
-                      <circle cx="18" cy="17" r="2"></circle>
-                    </svg>
-                    <span class="composer-menu-label">
-                      <span class="composer-menu-title">Debate</span>
-                      <span class="composer-menu-meta">Off</span>
-                    </span>
+            <div class="composer-shell ds-composer-shell">
+              <input id="followupInput" class="composer-input ds-input" type="text" placeholder="Type a message or hold to speak" autocomplete="off" />
+              <div class="ds-controls-row">
+                <div class="ds-mode-group">
+                  <button type="button" class="mode-chip debate-chip" data-debate-chip="true">
+                    <span class="mode-icon">◎</span>
+                    <span>Think</span>
+                  </button>
+                  <button type="button" class="mode-chip mode-chip-active">
+                    <span class="mode-icon">🌐</span>
+                    <span>Search</span>
+                  </button>
+                </div>
+                <div class="ds-action-group">
+                  <button id="followupPlus" type="button" class="icon-btn ds-icon-btn" aria-label="More options">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                  <button id="followupSend" type="button" class="send-btn ds-icon-btn" aria-label="Send">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12c1.6-2.8 4-4.2 6-4.2 3.6 0 6 3.2 6 6.2 0 2.1-1.1 3.9-2.9 4.9"/><path d="M20 9v6"/><path d="M18 11.2 20 9l2 2.2"/></svg>
                   </button>
                 </div>
               </div>
-              <input id="followupInput" class="composer-input" type="text" placeholder="Message Mentrophi" autocomplete="off" />
-              <button id="followupSend" type="button" class="send-btn" aria-label="Send">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M5 12h13"/><path d="m12 5 6.5 7-6.5 7"/>
-                </svg>
-              </button>
+              <div id="followupMenu" class="composer-menu">
+                <button type="button" class="composer-menu-item" data-toggle-debate="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h7l2 3h7"></path><path d="M6 17h7l2-3h5"></path><circle cx="6" cy="7" r="2"></circle><circle cx="18" cy="17" r="2"></circle></svg>
+                  <span class="composer-menu-label"><span class="composer-menu-title">Think Mode</span><span class="composer-menu-meta">Off</span></span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1093,6 +1343,9 @@
       }
       if(!html && files.length){html='<p>I put the code into an artifact so you can open it while it finishes generating.</p>';}
       else if(!html && message.role==='assistant' && Array.isArray(message.sources) && message.sources.length){html='<p>I found useful sources, but the answer stream came back incomplete. Try sending it once more and it should answer normally.</p>';}
+      if(message.role==='assistant'){
+        extra += '<div class="assistant-actions"><span>⧉</span><span>👍</span><span>👎</span><span>↻</span><span class="spacer"></span><span>↗</span></div>';
+      }
       return html + extra;
     }
     function renderThread(){
@@ -1123,6 +1376,9 @@
         const meta=item.querySelector('.composer-menu-meta');
         if(meta) meta.textContent=state.twoAgentReview?'On':'Off';
       });
+      document.querySelectorAll('[data-debate-chip="true"]').forEach(item=>{
+        item.classList.toggle('active', state.twoAgentReview);
+      });
       syncPlusButtons();
       persistComposerFlags();
     }
@@ -1144,7 +1400,7 @@
       topQuery.textContent=session.title||session.query||'Chat';
       renderThread();
       bottomComposer.classList.add('visible');
-      followupInput.placeholder='Message Mentrophi';
+      followupInput.placeholder='Type a message or hold to speak';
       setStatus('Ready');
       requestAnimationFrame(()=>{threadBody.scrollTop=threadBody.scrollHeight;});
     }
@@ -1270,6 +1526,7 @@
     artifactCopy.addEventListener('click',async()=>{const file=state.artifactFiles[state.activeArtifactIndex]; if(!file) return; await copyText(file.content||''); const t=artifactCopy.textContent; artifactCopy.textContent='Copied ✓'; setTimeout(()=>artifactCopy.textContent=t,2000);});
     artifactDownload.addEventListener('click',()=>{const file=state.artifactFiles[state.activeArtifactIndex]; if(!file) return; const blob=new Blob([file.content||''],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=file.name; a.click(); URL.revokeObjectURL(a.href);});
     document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',()=>{const target=homeState.style.display==='none'?followupInput:homeInput; target.value=chip.dataset.query||''; submitInput(target);}));
+    document.querySelectorAll('[data-debate-chip="true"]').forEach(btn=>btn.addEventListener('click',()=>{setDebateEnabled(!state.twoAgentReview);}));
     bindComposerMenu(homePlus,homeMenu);
     bindComposerMenu(followupPlus,followupMenu);
     document.addEventListener('click',(e)=>{if(e.target.closest('.composer-left')) return; closeComposerMenus();});
