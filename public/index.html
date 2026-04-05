@@ -905,6 +905,7 @@
       padding: 0 20px;
       width: min(100%, 780px);
     }
+    .home-composer-wrap { margin-top: 18px; }
     .deepseek-home .hero-mark {
       background: transparent;
       border: 0;
@@ -1146,7 +1147,6 @@
           <div class="article-shell">
             <section id="homeState" class="home-state">
               <div class="home-shell deepseek-home">
-                <div class="hero-mark" aria-label="Mentrophi wordmark">M en t ro p hi</div>
                 <div class="hero-copy">
                   <h1 class="hero-title">How can I help you?</h1>
                   <p class="hero-subtitle"> </p>
@@ -1158,11 +1158,11 @@
                       <input id="homeInput" class="composer-input ds-input" type="text" placeholder="Type a message or hold to speak" autocomplete="off" />
                       <div class="ds-controls-row">
                         <div class="ds-mode-group">
-                          <button type="button" class="mode-chip debate-chip" data-debate-chip="true">
+                          <button type="button" class="mode-chip debate-chip" data-debate-chip="true" data-mode="think">
                             <span class="mode-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.4"/></svg></span>
                             <span>Think</span>
                           </button>
-                          <button type="button" class="mode-chip mode-chip-active">
+                          <button type="button" class="mode-chip mode-chip-active" data-mode="search">
                             <span class="mode-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4a14 14 0 0 1 0 16M12 4a14 14 0 0 0 0 16"/></svg></span>
                             <span>Search</span>
                           </button>
@@ -1202,11 +1202,11 @@
               <input id="followupInput" class="composer-input ds-input" type="text" placeholder="Type a message or hold to speak" autocomplete="off" />
               <div class="ds-controls-row">
                 <div class="ds-mode-group">
-                  <button type="button" class="mode-chip debate-chip" data-debate-chip="true">
+                  <button type="button" class="mode-chip debate-chip" data-debate-chip="true" data-mode="think">
                     <span class="mode-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.4"/></svg></span>
                     <span>Think</span>
                   </button>
-                  <button type="button" class="mode-chip mode-chip-active">
+                  <button type="button" class="mode-chip mode-chip-active" data-mode="search">
                     <span class="mode-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4a14 14 0 0 1 0 16M12 4a14 14 0 0 0 0 16"/></svg></span>
                     <span>Search</span>
                   </button>
@@ -1420,6 +1420,12 @@
       document.querySelectorAll('[data-debate-chip="true"]').forEach(item=>{
         item.classList.toggle('active', state.twoAgentReview);
       });
+      document.querySelectorAll('.ds-mode-group').forEach(group=>{
+        const think=group.querySelector('[data-mode="think"]');
+        const search=group.querySelector('[data-mode="search"]');
+        if(think) think.classList.toggle('mode-chip-active', state.twoAgentReview);
+        if(search) search.classList.toggle('mode-chip-active', !state.twoAgentReview);
+      });
       syncPlusButtons();
       persistComposerFlags();
     }
@@ -1567,7 +1573,10 @@
     artifactCopy.addEventListener('click',async()=>{const file=state.artifactFiles[state.activeArtifactIndex]; if(!file) return; await copyText(file.content||''); const t=artifactCopy.textContent; artifactCopy.textContent='Copied ✓'; setTimeout(()=>artifactCopy.textContent=t,2000);});
     artifactDownload.addEventListener('click',()=>{const file=state.artifactFiles[state.activeArtifactIndex]; if(!file) return; const blob=new Blob([file.content||''],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=file.name; a.click(); URL.revokeObjectURL(a.href);});
     document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',()=>{const target=homeState.style.display==='none'?followupInput:homeInput; target.value=chip.dataset.query||''; submitInput(target);}));
-    document.querySelectorAll('[data-debate-chip="true"]').forEach(btn=>btn.addEventListener('click',()=>{setDebateEnabled(!state.twoAgentReview);}));
+    document.querySelectorAll('.mode-chip').forEach(btn=>btn.addEventListener('click',()=>{
+      if(btn.dataset.mode==='think') setDebateEnabled(true);
+      if(btn.dataset.mode==='search') setDebateEnabled(false);
+    }));
     bindComposerMenu(homePlus,homeMenu);
     bindComposerMenu(followupPlus,followupMenu);
     document.addEventListener('click',(e)=>{if(e.target.closest('.composer-left')) return; closeComposerMenus();});
