@@ -812,7 +812,7 @@
       --muted: #8f929d;
       --muted-2: #6f7480;
       --border: rgba(255,255,255,.09);
-      --sidebar-width: 308px;
+      --sidebar-width: 82vw;
     }
     body {
       background: #050608;
@@ -823,7 +823,7 @@
     .sidebar {
       position: fixed;
       inset: 0 auto 0 0;
-      width: var(--sidebar-width);
+      width: min(var(--sidebar-width), 340px);
       transform: translateX(-100%);
       transition: transform .22s ease;
       background: #2b2d31;
@@ -832,12 +832,16 @@
       z-index: 50;
     }
     .sidebar.open { transform: translateX(0); }
-    .overlay.open { display:block; }
-    .sidebar-head { padding: 12px 16px; }
+    .overlay.open {
+      display:block;
+      background: rgba(0,0,0,.16);
+      backdrop-filter: none;
+    }
+    .sidebar-head { padding: 14px 16px 10px; }
     .brand-title { font-size: 13px; letter-spacing: .01em; }
     .brand-subtitle { display: none; }
-    .new-chat { margin: 4px 16px 2px; border-radius: 18px; background: #2e3854; border: 0; }
-    .new-chat-label { color: #83a9ff; font-weight: 500; }
+    .new-chat { margin: 4px 16px 6px; border-radius: 22px; background: #2e3854; border: 0; min-height: 66px; justify-content: flex-start; padding-left: 22px; }
+    .new-chat-label { color: #83a9ff; font-weight: 500; font-size: 16px; line-height: 1; letter-spacing: -.01em; }
     .new-chat-plus { display:none; }
     .sidebar-section { padding: 4px 12px 12px; }
     .history-title {
@@ -852,10 +856,12 @@
     }
     .history-item {
       font-size: 20px;
-      border-radius: 16px;
-      padding: 10px 14px;
+      border-radius: 18px;
+      padding: 11px 16px;
       color: #f0f1f3;
       border: 0;
+      min-height: 58px;
+      align-items: center;
     }
     .history-item.active,
     .history-item:hover {
@@ -887,7 +893,9 @@
     }
     @media (max-width: 640px) {
       .top-query { font-size: 15px; font-weight: 600; }
-      .history-item { font-size: 15px; }
+      .history-item { font-size: 15px; min-height: 44px; border-radius: 14px; }
+      .new-chat-label { font-size: 16px; }
+      .new-chat { min-height: 58px; border-radius: 18px; }
     }
 
     .home-shell.deepseek-home {
