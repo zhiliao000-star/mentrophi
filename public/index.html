@@ -905,7 +905,7 @@
       padding: 0 20px;
       width: min(100%, 780px);
     }
-    .home-composer-wrap { margin-top: 18px; }
+    .home-composer-wrap { margin-top: 44px; }
     .deepseek-home .hero-mark {
       background: transparent;
       border: 0;
@@ -984,6 +984,10 @@
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+    #homePlus,
+    #followupPlus {
+      display: none !important;
     }
     .mode-chip {
       height: 40px;
@@ -1254,7 +1258,7 @@
 
   <script>
     const STORAGE_KEY='mentrophi-history-v2';
-    const state={sessions:[],activeSessionId:null,currentAnswer:'',currentSources:[],abortController:null,currentMeta:{codeMode:false},artifactFiles:[],activeArtifactIndex:0,twoAgentReview:false};
+    const state={sessions:[],activeSessionId:null,currentAnswer:'',currentSources:[],abortController:null,currentMeta:{codeMode:false},artifactFiles:[],activeArtifactIndex:0,twoAgentReview:false,searchEnabled:true};
     const app=document.getElementById('app'),sidebar=document.getElementById('sidebar'),overlay=document.getElementById('overlay'),menuBtn=document.getElementById('menuBtn'),sidebarClose=document.getElementById('sidebarClose'),newChatBtn=document.getElementById('newChatBtn'),historyList=document.getElementById('historyList'),homeState=document.getElementById('homeState'),threadView=document.getElementById('threadView'),threadBody=document.getElementById('threadBody'),homeInput=document.getElementById('homeInput'),homeSend=document.getElementById('homeSend'),followupInput=document.getElementById('followupInput'),followupSend=document.getElementById('followupSend'),bottomComposer=document.getElementById('bottomComposer'),statusText=document.getElementById('statusText'),topQuery=document.getElementById('topQuery'),toast=document.getElementById('toast'),artifactPanel=document.getElementById('artifactPanel'),artifactTabs=document.getElementById('artifactTabs'),artifactCode=document.getElementById('artifactCode'),artifactMarkdown=document.getElementById('artifactMarkdown'),artifactPre=document.getElementById('artifactPre'),artifactClose=document.getElementById('artifactClose'),artifactCopy=document.getElementById('artifactCopy'),artifactDownload=document.getElementById('artifactDownload'),homePlus=document.getElementById('homePlus'),followupPlus=document.getElementById('followupPlus'),homeMenu=document.getElementById('homeMenu'),followupMenu=document.getElementById('followupMenu'),topNewChatBtn=document.getElementById('topNewChatBtn');
     const composerMenus=[homeMenu,followupMenu].filter(Boolean);
     marked.setOptions({breaks:true,gfm:true});
@@ -1282,8 +1286,8 @@
       });
     }
 
-    function defaultSession(){return {id:crypto.randomUUID(),title:'New chat',query:'',history:[],messages:[],meta:{codeMode:false},twoAgentReview:state.twoAgentReview};}
-    function migrateSessions(raw=[]){return raw.map(session=>({id:session.id||crypto.randomUUID(),title:session.title||session.query||'New chat',query:session.query||'',history:Array.isArray(session.history)?session.history:[],messages:Array.isArray(session.messages)?session.messages:(session.answer?[{role:'assistant',content:session.answer,sources:session.sources||[],meta:session.meta||{},review:emptyReview()}]:[]),meta:session.meta||{codeMode:false},twoAgentReview:typeof session.twoAgentReview==='boolean'?session.twoAgentReview:false}));}
+    function defaultSession(){return {id:crypto.randomUUID(),title:'New chat',query:'',history:[],messages:[],meta:{codeMode:false},twoAgentReview:state.twoAgentReview,searchEnabled:state.searchEnabled};}
+    function migrateSessions(raw=[]){return raw.map(session=>({id:session.id||crypto.randomUUID(),title:session.title||session.query||'New chat',query:session.query||'',history:Array.isArray(session.history)?session.history:[],messages:Array.isArray(session.messages)?session.messages:(session.answer?[{role:'assistant',content:session.answer,sources:session.sources||[],meta:session.meta||{},review:emptyReview(),search:emptySearch()}]:[]),meta:session.meta||{codeMode:false},twoAgentReview:typeof session.twoAgentReview==='boolean'?session.twoAgentReview:false,searchEnabled:typeof session.searchEnabled==='boolean'?session.searchEnabled:true}));}
     function saveSessions(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state.sessions));}
     function loadSessions(){try{state.sessions=migrateSessions(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'));}catch{state.sessions=[];}}
     function createSession(initialQuery=''){
@@ -1307,6 +1311,15 @@
     function extractCodeBlocks(markdown=''){const blocks=[];const regex=/```([\w#+.-]*)\n([\s\S]*?)(```|$)/g;let match;let idx=1;while((match=regex.exec(markdown))){const language=(match[1]||'').toLowerCase();const content=(match[2]||'').trim();if(!content) continue;blocks.push({name:`app-${idx}.${inferExtension(language)}`,language,content,incomplete:match[3]!=='```',kind:'code'});idx+=1;}return blocks;}
     function extractWritingArtifact(markdown=''){const prose=(markdown||'').replace(/```[\w#+.-]*\n[\s\S]*?(?:```|$)/g,'').trim(); if(!prose) return []; const paragraphCount=prose.split(/\n\s*\n/).filter(Boolean).length; const looksStructured=/(^|\n)(#|##|###|[-*] |\d+\. )/m.test(prose); const substantial=prose.length>1400 || paragraphCount>=6 || (prose.length>900 && looksStructured); if(!substantial) return []; return [{name:'draft.md',language:'markdown',content:prose,incomplete:false,kind:'writing'}]; }
     function emptyReview(){return {open:false,running:false,timeline:[]};}
+    function emptySearch(){return {enabled:false,open:false,running:false,sources:[]};}
+    function renderSearchPanel(search,index){
+      if(!search || !search.enabled) return '';
+      const count=Array.isArray(search.sources)?search.sources.length:0;
+      if(!search.running && !count) return '';
+      const label=search.running?'Searching the web…':`View web search (${count} sources)`;
+      const list=(search.sources||[]).map((source,sourceIndex)=>`<div class="review-turn"><div class="review-agent-name">Source ${sourceIndex+1}</div><div class="review-turn-message"><a href="${escapeHtml(source.url||'#')}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title||source.url||'Untitled source')}</a></div></div>`).join('');
+      return `<div class="debate-inline"><button class="debate-toggle ${search.running?'running':''}" type="button" data-search-toggle="${index}"><span class="debate-toggle-text">${label}</span><span class="debate-toggle-caret">${search.open?'Hide':'Open'}</span></button>${search.open?`<div class="review-panel"><div class="review-body">${list||'<div class="review-turn-message">Searching…</div>'}</div></div>`:''}</div>`;
+    }
     function renderReviewPanel(review,index){
       if(!review || (!review.running && (!Array.isArray(review.timeline) || !review.timeline.length))) return '';
       const turnCount=(review.timeline||[]).length;
@@ -1354,6 +1367,7 @@
       finally{if(btn) btn.disabled=false;}
     }
     function renderMessageContent(message,index){
+      const searchHtml=message.role==='assistant'?renderSearchPanel(message.search,index):'';
       const reviewHtml=message.role==='assistant'?renderReviewPanel(message.review,index):'';
       const codeFiles=extractCodeBlocks(message.content||'');
       const writingFiles=codeFiles.length?[]:extractWritingArtifact(message.content||'');
@@ -1366,7 +1380,7 @@
         const previewParas=proseSource.split(/\n\s*\n/).filter(Boolean).slice(0,2).join('\n\n');
         html=previewParas?marked.parse(previewParas):html;
       }
-      let extra=reviewHtml;
+      let extra=searchHtml + reviewHtml;
       if(files.length){
         extra += `<div class="artifact-cards">${files.map((file,fileIndex)=>`<div class="artifact-card"><div class="artifact-meta"><div><div class="artifact-name">${escapeHtml(file.kind==='writing'?'Long-form draft':file.name)}</div><div class="artifact-subtle">${escapeHtml(file.kind==='writing'?'Open separately for reading or editing':languageLabel(file.language))}${file.incomplete?' · generating…':''}</div></div><button class="artifact-open" data-file-index="${fileIndex}" data-message-index="${index}">Open</button></div></div>`).join('')}</div>`;
         const shareableFiles=files.filter(file=>!file.incomplete && file.kind==='code');
@@ -1420,17 +1434,25 @@
       document.querySelectorAll('[data-debate-chip="true"]').forEach(item=>{
         item.classList.toggle('active', state.twoAgentReview);
       });
+      syncModeChips();
+      syncPlusButtons();
+      persistComposerFlags();
+    }
+    function setSearchEnabled(enabled){
+      state.searchEnabled=!!enabled;
+      syncModeChips();
+      persistComposerFlags();
+    }
+    function syncModeChips(){
       document.querySelectorAll('.ds-mode-group').forEach(group=>{
         const think=group.querySelector('[data-mode="think"]');
         const search=group.querySelector('[data-mode="search"]');
         if(think) think.classList.toggle('mode-chip-active', state.twoAgentReview);
-        if(search) search.classList.toggle('mode-chip-active', !state.twoAgentReview);
+        if(search) search.classList.toggle('mode-chip-active', state.searchEnabled);
       });
-      syncPlusButtons();
-      persistComposerFlags();
     }
     function syncPlusButtons(){[homePlus,followupPlus].forEach(btn=>btn&&btn.classList.toggle('active',state.twoAgentReview));}
-    function persistComposerFlags(){const session=getActiveSession(); if(session){session.twoAgentReview=state.twoAgentReview; saveSessions();}}
+    function persistComposerFlags(){const session=getActiveSession(); if(session){session.twoAgentReview=state.twoAgentReview; session.searchEnabled=state.searchEnabled; saveSessions();}}
     function showHome(){
       homeState.style.display='grid';
       threadView.classList.remove('active');
@@ -1455,7 +1477,9 @@
       state.activeSessionId=sessionId;
       renderHistory();
       const session=getActiveSession();
+      state.searchEnabled = typeof session?.searchEnabled==='boolean' ? session.searchEnabled : true;
       setDebateEnabled(!!session?.twoAgentReview);
+      syncModeChips();
       if(!session||!session.messages.length) showHome();
       else showThread(session);
       saveSessions();
@@ -1469,11 +1493,13 @@
       let session=getActiveSession();
       if(!session) session=createSession(trimmed);
       if(!session.messages.length && session.title==='New chat'){session.title=trimmed.slice(0,42); session.query=trimmed;}
+      const effectiveQuery = state.searchEnabled ? `Search the web first, then answer:\n${trimmed}` : `${trimmed}\n\nAnswer directly without web search.`;
       session.query=session.query||trimmed;
       session.twoAgentReview=state.twoAgentReview;
+      session.searchEnabled=state.searchEnabled;
       session.history.push({role:'user',content:trimmed});
       session.messages.push({role:'user',content:trimmed,sources:[],meta:{}});
-      const assistantMessage={role:'assistant',content:'',sources:[],meta:{codeMode:false},review:emptyReview()};
+      const assistantMessage={role:'assistant',content:'',sources:[],meta:{codeMode:false},review:emptyReview(),search:{enabled:state.searchEnabled,open:false,running:state.searchEnabled,sources:[]},reviewPending:false};
       session.messages.push(assistantMessage);
       state.currentAnswer='';
       renderHistory();
@@ -1481,7 +1507,7 @@
       setStatus('Checking');
       saveSessions();
       try{
-        const response=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:trimmed,history:session.history,twoAgentReview:state.twoAgentReview}),signal:state.abortController.signal});
+        const response=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:effectiveQuery,history:session.history,twoAgentReview:state.twoAgentReview}),signal:state.abortController.signal});
         if(!response.ok||!response.body){
           let message='Request failed.';
           try{const error=await response.json(); message=error.error||message;}catch{}
@@ -1509,12 +1535,31 @@
             const payload=JSON.parse(dataLine);
             if(eventName==='meta'){
               assistantMessage.meta=payload||{codeMode:false};
-              if(payload?.reviewMode){assistantMessage.review=assistantMessage.review||emptyReview(); assistantMessage.review.running=true; renderThread(); saveSessions();}
+              if(payload?.reviewMode){
+                assistantMessage.review=assistantMessage.review||emptyReview();
+                if(assistantMessage.search?.running){
+                  assistantMessage.reviewPending=true;
+                } else {
+                  assistantMessage.review.running=true;
+                }
+                renderThread();
+                saveSessions();
+              }
             } else if(eventName==='sources'){
-              assistantMessage.sources=payload.sources||[]; renderThread(); saveSessions();
+              assistantMessage.sources=payload.sources||[];
+              if(assistantMessage.search?.enabled){
+                assistantMessage.search.sources=payload.sources||[];
+                assistantMessage.search.running=false;
+                if(assistantMessage.reviewPending){
+                  assistantMessage.review.running=true;
+                  assistantMessage.reviewPending=false;
+                }
+              }
+              renderThread();
+              saveSessions();
             } else if(eventName==='review'){
               assistantMessage.review=assistantMessage.review||emptyReview();
-              assistantMessage.review.running=true;
+              if(!assistantMessage.search?.running){assistantMessage.review.running=true;}
               assistantMessage.review.timeline=assistantMessage.review.timeline||[];
               assistantMessage.review.timeline.push({round:payload.round||1,agent:payload.agent||'Agent',text:payload.text||''});
               renderThread();
@@ -1529,6 +1574,8 @@
               throw new Error(payload.error||'Streaming error.');
             } else if(eventName==='done'){
               if(assistantMessage.review) assistantMessage.review.running=false;
+              if(assistantMessage.search) assistantMessage.search.running=false;
+              assistantMessage.reviewPending=false;
               renderThread();
               saveSessions();
               finished=true;
@@ -1543,6 +1590,7 @@
         if(error.name==='AbortError'){setStatus('Canceled'); return;}
         assistantMessage.content=error.message||'Something went wrong.';
         if(assistantMessage.review) assistantMessage.review.running=false;
+        if(assistantMessage.search) assistantMessage.search.running=false;
         renderThread();
         setStatus('Error');
       } finally {
@@ -1555,14 +1603,25 @@
     ['click','pointerup','touchend'].forEach(evt=>homeSend&&homeSend.addEventListener(evt,(e)=>{e.preventDefault();submitInput(homeInput);}));
     ['click','pointerup','touchend'].forEach(evt=>followupSend&&followupSend.addEventListener(evt,(e)=>{e.preventDefault();submitInput(followupInput);}));
     threadBody.addEventListener('click',(e)=>{
-      const btn=e.target.closest('[data-review-toggle]');
-      if(!btn) return;
-      const session=getActiveSession();
-      const idx=Number(btn.dataset.reviewToggle);
-      const msg=session?.messages?.[idx];
-      if(!msg||!msg.review) return;
-      msg.review.open=!msg.review.open;
-      renderThread();
+      const reviewBtn=e.target.closest('[data-review-toggle]');
+      if(reviewBtn){
+        const session=getActiveSession();
+        const idx=Number(reviewBtn.dataset.reviewToggle);
+        const msg=session?.messages?.[idx];
+        if(!msg||!msg.review) return;
+        msg.review.open=!msg.review.open;
+        renderThread();
+        return;
+      }
+      const searchBtn=e.target.closest('[data-search-toggle]');
+      if(searchBtn){
+        const session=getActiveSession();
+        const idx=Number(searchBtn.dataset.searchToggle);
+        const msg=session?.messages?.[idx];
+        if(!msg||!msg.search) return;
+        msg.search.open=!msg.search.open;
+        renderThread();
+      }
     });
     newChatBtn.addEventListener('click',()=>{const session=createSession(''); openSession(session.id); if(homeInput) homeInput.focus(); closeSidebar(); closeArtifact();});
     topNewChatBtn.addEventListener('click',()=>{const session=createSession(''); openSession(session.id); if(homeInput) homeInput.focus(); closeArtifact(); closeSidebar();});
@@ -1574,15 +1633,15 @@
     artifactDownload.addEventListener('click',()=>{const file=state.artifactFiles[state.activeArtifactIndex]; if(!file) return; const blob=new Blob([file.content||''],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=file.name; a.click(); URL.revokeObjectURL(a.href);});
     document.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',()=>{const target=homeState.style.display==='none'?followupInput:homeInput; target.value=chip.dataset.query||''; submitInput(target);}));
     document.querySelectorAll('.mode-chip').forEach(btn=>btn.addEventListener('click',()=>{
-      if(btn.dataset.mode==='think') setDebateEnabled(true);
-      if(btn.dataset.mode==='search') setDebateEnabled(false);
+      if(btn.dataset.mode==='think') setDebateEnabled(!state.twoAgentReview);
+      if(btn.dataset.mode==='search') setSearchEnabled(!state.searchEnabled);
     }));
     bindComposerMenu(homePlus,homeMenu);
     bindComposerMenu(followupPlus,followupMenu);
     document.addEventListener('click',(e)=>{if(e.target.closest('.composer-left')) return; closeComposerMenus();});
 
     loadSessions();
-    if(state.sessions.length){state.activeSessionId=state.sessions[0].id; openSession(state.activeSessionId);} else {setDebateEnabled(false); showHome(); renderHistory();}
+    if(state.sessions.length){state.activeSessionId=state.sessions[0].id; openSession(state.activeSessionId);} else {setSearchEnabled(true); setDebateEnabled(false); showHome(); renderHistory();}
   </script>
 </body>
 </html>
