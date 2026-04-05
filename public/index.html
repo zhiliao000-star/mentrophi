@@ -34,8 +34,8 @@
       --radius-lg: 14px;
       --radius-md: 12px;
       --radius-sm: 10px;
-      --sidebar-width: 260px;
-      --thread-width: 720px;
+      --sidebar-width: 300px;
+      --thread-width: 860px;
       --artifact-width: min(420px, 42vw);
       --codebg: #101012;
       --codehead: #141416;
@@ -45,7 +45,7 @@
     html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
     body {
       font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 15px;
+      font-size: 17px;
       line-height: 1.7;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
@@ -103,15 +103,15 @@
       min-width:0;
     }
     .brand-mark {
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
       display:grid;
       place-items:center;
       background: var(--bg-soft);
       border: 1px solid var(--border);
       color: var(--text-soft);
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 600;
     }
     .brand-text {
@@ -120,13 +120,13 @@
       min-width:0;
     }
     .brand-title {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
       letter-spacing: .02em;
       color: var(--text);
     }
     .brand-subtitle {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--muted);
       letter-spacing: .01em;
     }
@@ -158,7 +158,7 @@
       border:1px solid var(--border);
       transition: background .15s ease, border-color .15s ease;
     }
-    .new-chat-label { font-weight: 500; font-size: 14px; }
+    .new-chat-label { font-weight: 500; font-size: 15px; }
     .new-chat-plus {
       width: 20px;
       height: 20px;
@@ -202,7 +202,7 @@
     .history-item {
       width:100%;
       text-align:left;
-      padding:9px 11px;
+      padding:10px 12px;
       border-radius: var(--radius-sm);
       color: var(--muted);
       background: transparent;
@@ -211,7 +211,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       transition: background .15s ease, color .15s ease;
-      font-size: 13px;
+      font-size: 14px;
       line-height: 1.4;
     }
     .history-item:hover {
@@ -314,7 +314,7 @@
     }
     .home-shell {
       width: 100%;
-      max-width: 680px;
+      max-width: 860px;
       display: flex;
       flex-direction: column;
       gap: 28px;
@@ -348,7 +348,7 @@
     }
     .hero-title {
       margin: 0;
-      font-size: clamp(32px, 5vw, 48px);
+      font-size: clamp(40px, 6vw, 60px);
       line-height: 1.1;
       letter-spacing: -.03em;
       font-weight: 600;
@@ -357,7 +357,7 @@
     }
     .hero-subtitle {
       margin: 0;
-      font-size: 14px;
+      font-size: 17px;
       line-height: 1.6;
       color: var(--muted);
       max-width: 38ch;
@@ -378,8 +378,8 @@
       display:grid;
       grid-template-columns: auto minmax(0,1fr) auto;
       align-items:center;
-      gap: 8px;
-      padding: 10px 12px;
+      gap: 10px;
+      padding: 14px 18px;
       border-radius: var(--radius-lg);
       border: 1px solid var(--border);
       background: var(--bg-soft);
@@ -399,8 +399,8 @@
       border: 0 !important;
       background: transparent !important;
       color: var(--text);
-      font-size: 15px;
-      padding: 8px 2px;
+      font-size: 17px;
+      padding: 10px 2px;
       -webkit-appearance:none;
       appearance:none;
     }
@@ -808,7 +808,7 @@
       --muted: #7a7a86;
       --muted-2: #55555f;
       --border: rgba(255,255,255,.06);
-      --sidebar-width: 260px;
+      --sidebar-width: 300px;
     }
     body { background: var(--bg); }
     .app, .app.artifact-open { grid-template-columns: 1fr; }
@@ -1009,7 +1009,7 @@
       gap: 24px;
       padding: 0;
       width: 100%;
-      max-width: 680px;
+      max-width: 860px;
     }
     /* Brand eyebrow — subtle serif */
     .deepseek-home .hero-mark {
@@ -1069,7 +1069,7 @@
     .home-composer-wrap,
     .bottom-composer .composer {
       width: 100%;
-      max-width: 680px;
+      max-width: 860px;
       margin: 0 auto;
       padding: 0;
     }
